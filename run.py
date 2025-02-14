@@ -13,7 +13,17 @@ app.config['MYSQL_PORT'] = flask_config.get('port', 3306)
 
 # setup cross-origin resource sharing
 from flask_cors import CORS
-CORS(app)
+CORS(app, 
+     resources={r"/api/*": {
+         "origins": ["http://localhost:5001", "https://aegis.smartswap.com"],
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "allow_headers": ["Content-Type", "Authorization"],
+         "expose_headers": ["Content-Range", "X-Content-Range"],
+         "supports_credentials": True,
+         "max_age": 600,
+         "allow_private_network": False
+     }}
+)
 
 # register api routes
 app.register_blueprint(auth.bp)

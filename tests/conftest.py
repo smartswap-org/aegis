@@ -1,6 +1,7 @@
 import os
 import sys
 import pytest
+import tempfile
 from pathlib import Path
 import mysql.connector
 from mysql.connector import Error
@@ -13,16 +14,21 @@ from run import app
 
 @pytest.fixture(scope='session', autouse=True)
 def setup_test_env():
+    os.environ['FLASK_ENV'] = 'testing'
+    os.environ['FLASK_DEBUG'] = 'False'
     os.environ['MYSQL_HOST'] = 'localhost'
-    os.environ['MYSQL_USER'] = 'root'  
-    os.environ['MYSQL_PASSWORD'] = ''  
-    os.environ['MYSQL_DB'] = 'smartswap_test'
+    os.environ['MYSQL_USER'] = 'root'
+    os.environ['MYSQL_PASSWORD'] = ''
+    os.environ['MYSQL_DATABASE'] = 'smartswap_test'
+    os.environ['MYSQL_PORT'] = '3306'
     
     try:
         conn = mysql.connector.connect(
             host=os.environ['MYSQL_HOST'],
             user=os.environ['MYSQL_USER'],
-            password=os.environ['MYSQL_PASSWORD']
+            password=os.environ['MYSQL_PASSWORD'],
+            ssl_disabled=True,
+            auth_plugin='mysql_native_password'
         )
         cursor = conn.cursor()
         

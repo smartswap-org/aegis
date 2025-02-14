@@ -1,4 +1,4 @@
-from flask_restx import Api, Resource, fields
+from flask_restx import Api, Resource, fields, Namespace
 from flask import Blueprint, request, jsonify, url_for
 from api.database import get_db
 from loguru import logger
@@ -12,7 +12,9 @@ api = Api(bp,
     prefix='/api',
     doc='/',
     default='AEGIS',
-    default_label='AEGIS API Endpoints'
+    default_label='AEGIS API Endpoints',
+    validate=True,
+    ordered=True
 )
 
 # custom swagger ui configuration

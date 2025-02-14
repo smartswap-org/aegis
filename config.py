@@ -41,7 +41,7 @@ class Config:
 
     # flask configuration
     FLASK_SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
-    FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true' and os.getenv('FLASK_ENV', 'production') != 'production'
 
     @staticmethod
     def get_mysql_config():
