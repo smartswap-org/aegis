@@ -1,0 +1,142 @@
+from flask import Blueprint, request, jsonify
+from api.database import get_db
+from loguru import logger
+
+bp = Blueprint('positions', __name__, url_prefix='/api/positions')
+
+@bp.route('/', methods=['POST'])
+def create_position():
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'message': 'No input data provided'}), 400
+        
+    required_fields = ['buy_order_id', 'buy_price', 'buy_quantity', 'buy_fees',
+                      'buy_value_usdt', 'exchange', 'pair', 'bot_name']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'message': f'Missing required field: {field}'}), 400
+            
+    db = get_db()
+    if not db:
+        return jsonify({'message': 'Database connection error'}), 500
+        
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        cursor.execute('''
+            INSERT INTO cex_market (
+                buy_order_id, buy_price, buy_quantity, buy_fees, 
+                buy_value_usdt, exchange, pair, bot_name, buy_date,
+                buy_signals, fund_slot
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s)
+        ''', (
+            data['buy_order_id'], data['buy_price'], data['buy_quantity'],
+            data['buy_fees'], data['buy_value_usdt'], data['exchange'],
+            data['pair'], data['bot_name'], data.get('buy_signals'),
+            data.get('fund_slot', 0)
+        ))
+        position_id = cursor.lastrowid
+        
+        cursor.execute(
+            'INSERT INTO app (position_id) VALUES (%s)',
+            (position_id,)
+        )
+        db.commit()
+        
+        return jsonify({
+            'message': 'Position created successfully',
+            'position_id': position_id
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Error creating position: {e}")
+        db.rollback()
+        return jsonify({'message': f'Error creating position: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        db.close()
+
+@bp.route('/', methods=['GET'])
+def get_positions():
+    db = get_db()
+    if not db:
+        return jsonify({'message': 'Database connection error'}), 500
+        
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        cursor.execute('''
+            SELECT cm.*, a.buy_log, a.sell_log
+            FROM cex_market cm
+            LEFT JOIN app a ON cm.position_id = a.position_id
+            ORDER BY cm.buy_date DESC
+        ''')
+        positions = cursor.fetchall()
+        
+        return jsonify({'positions': positions}), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching positions: {e}")
+        return jsonify({'message': f'Error fetching positions: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        db.close()
+
+@bp.route('/<int:position_id>/sell', methods=['PUT'])
+def update_position(position_id):
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'message': 'No input data provided'}), 400
+        
+    required_fields = ['sell_order_id', 'sell_price', 'sell_quantity',
+                      'sell_fees', 'sell_value_usdt']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'message': f'Missing required field: {field}'}), 400
+            
+    db = get_db()
+    if not db:
+        return jsonify({'message': 'Database connection error'}), 500
+        
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        cursor.execute('''
+            UPDATE cex_market SET
+                sell_order_id = %s,
+                sell_price = %s,
+                sell_quantity = %s,
+                sell_fees = %s,
+                sell_value_usdt = %s,
+                sell_date = NOW(),
+                sell_signals = %s,
+                ratio = (sell_value_usdt - buy_value_usdt) / buy_value_usdt,
+                position_duration = TIMESTAMPDIFF(SECOND, buy_date, NOW())
+            WHERE position_id = %s
+        ''', (
+            data['sell_order_id'], data['sell_price'], data['sell_quantity'],
+            data['sell_fees'], data['sell_value_usdt'], data.get('sell_signals'),
+            position_id
+        ))
+        
+        if cursor.rowcount == 0:
+            return jsonify({'message': 'Position not found'}), 404
+            
+        if 'sell_log' in data:
+            cursor.execute(
+                'UPDATE app SET sell_log = %s WHERE position_id = %s',
+                (data['sell_log'], position_id)
+            )
+            
+        db.commit()
+        return jsonify({'message': 'Position updated successfully'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error updating position: {e}")
+        db.rollback()
+        return jsonify({'message': f'Error updating position: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        db.close() 
