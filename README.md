@@ -37,7 +37,7 @@ AEGIS is an API that securely manages users, wallets, trading positions, and fun
    MYSQL_HOST=localhost
    MYSQL_USER=root
    MYSQL_PASSWORD=
-   MYSQL_DB=smartswap
+   MYSQL_DATABASE=smartswap
    MYSQL_PORT=3306
    ```
 
