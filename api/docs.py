@@ -2,13 +2,27 @@ from flask_restx import Api, Resource, fields, Namespace
 from flask import Blueprint, request, jsonify, url_for
 from api.database import get_db
 from loguru import logger
+import jwt
+import os
+
+# Secret key for JWT
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key')
 
 # api documentation blueprint
 bp = Blueprint('docs', __name__)
 api = Api(bp,
     title='AEGIS API Documentation',
     version='1.0',
-    description='Complete documentation of the AEGIS API',
+    description='''Complete documentation of the AEGIS API
+    
+Power Levels:
+- 5 (SYS.ADMIN): System administrator with full access
+- 4 (DEVELOPER): Development team member
+- 3 (REVIEWER): Code reviewer
+- 2 (VIP): VIP client with extended access
+- 1 (CLIENT): Standard client
+- 0 (VISITOR): Basic visitor access
+''',
     prefix='/api',
     doc='/',
     default='AEGIS',
@@ -78,7 +92,8 @@ funds_ns = api.namespace('funds', description='Fund management')
 register_model = api.model('Register', {
     'user': fields.String(required=True, description='Username'),
     'password': fields.String(required=True, description='Password (min. 8 characters)'),
-    'discord_user_id': fields.String(required=False, description='Discord user ID')
+    'discord_user_id': fields.String(required=False, description='Discord user ID'),
+    'power': fields.Integer(required=False, description='Power level (0-VISITOR, 1-CLIENT, 2-VIP, 3-REVIEWER, 4-DEVELOPER, 5-SYS.ADMIN)', default=0)
 })
 
 login_model = api.model('Login', {
@@ -89,7 +104,12 @@ login_model = api.model('Login', {
 auth_response = api.model('AuthResponse', {
     'user': fields.String(description='Username'),
     'discord_user_id': fields.String(description='Discord ID'),
-    'token': fields.String(description='JWT Token')
+    'token': fields.String(description='JWT Token'),
+    'power': fields.Integer(description='Power level (0-VISITOR, 1-CLIENT, 2-VIP, 3-REVIEWER, 4-DEVELOPER, 5-SYS.ADMIN)')
+})
+
+power_update_model = api.model('PowerUpdate', {
+    'power': fields.Integer(required=True, description='New power level (0-5)')
 })
 
 wallet_model = api.model('Wallet', {
@@ -182,6 +202,121 @@ class Logout(Resource):
     def post(self):
         """logout current user"""
         pass
+
+@auth_ns.route('/user/<string:username>/power')
+class UserPower(Resource):
+    @auth_ns.doc(security='Bearer')
+    @auth_ns.expect(power_update_model)
+    @auth_ns.response(200, 'Power level updated successfully')
+    @auth_ns.response(401, 'Unauthorized')
+    @auth_ns.response(403, 'Forbidden - Insufficient privileges')
+    @auth_ns.response(404, 'User not found')
+    def put(self, username):
+        """update user power level (requires SYS.ADMIN privileges)"""
+        pass
+
+@auth_ns.route('/user')
+class UserInfo(Resource):
+    @auth_ns.doc(security='Bearer')
+    @auth_ns.response(200, 'Success', auth_response)
+    @auth_ns.response(401, 'Unauthorized')
+    def get(self):
+        """get current user information"""
+        try:
+            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            if not token:
+                return {'error': 'No token provided'}, 401
+
+            try:
+                # Décoder le token JWT
+                payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+                username = payload.get('user')
+                if not username:
+                    return {'error': 'Invalid token'}, 401
+            except jwt.InvalidTokenError:
+                return {'error': 'Invalid token'}, 401
+
+            db = get_db()
+            if not db:
+                return {'error': 'Database connection error'}, 500
+
+            cursor = db.cursor(dictionary=True)
+            try:
+                cursor.execute("""
+                    SELECT user, discord_user_id, power
+                    FROM clients
+                    WHERE user = %s
+                """, (username,))
+                
+                user_data = cursor.fetchone()
+                if not user_data:
+                    return {'error': 'User not found'}, 404
+
+                return {
+                    'user': user_data['user'],
+                    'discord_user_id': user_data['discord_user_id'],
+                    'power': user_data['power']
+                }, 200
+
+            finally:
+                cursor.close()
+                db.close()
+
+        except Exception as e:
+            logger.error(f"Error in user info: {e}")
+            return {'error': str(e)}, 500
+
+@auth_ns.route('/check')
+class AuthCheck(Resource):
+    @auth_ns.doc(security='Bearer')
+    @auth_ns.response(200, 'Token is valid', auth_response)
+    @auth_ns.response(401, 'Token is invalid or expired')
+    def get(self):
+        """verify if the current token is valid"""
+        try:
+            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            if not token:
+                return {'authenticated': False}, 401
+
+            try:
+                # Décoder le token JWT
+                payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+                username = payload.get('user')
+                if not username:
+                    return {'authenticated': False}, 401
+            except jwt.InvalidTokenError:
+                return {'authenticated': False}, 401
+
+            db = get_db()
+            if not db:
+                return {'error': 'Database connection error'}, 500
+
+            cursor = db.cursor(dictionary=True)
+            try:
+                cursor.execute("""
+                    SELECT user, discord_user_id, power
+                    FROM clients
+                    WHERE user = %s
+                """, (username,))
+                
+                user_data = cursor.fetchone()
+                if not user_data:
+                    return {'authenticated': False}, 401
+
+                return {
+                    'authenticated': True,
+                    'user': user_data['user'],
+                    'discord_user_id': user_data['discord_user_id'],
+                    'power': user_data['power']
+                }, 200
+
+            finally:
+                cursor.close()
+                db.close()
+
+        except Exception as e:
+            logger.error(f"Error in auth check: {e}")
+            return {'authenticated': False}, 401
 
 # wallet management endpoints
 @wallets_ns.route('/')
