@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from api.database import get_db
 from api.utils.crypt_password import encrypt_password, check_password
-from api.utils.auth import generate_token, rate_limit
+from api.utils.auth import generate_token, rate_limit, verify_token
 from loguru import logger
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -100,4 +100,44 @@ def login():
 @bp.route('/logout', methods=['POST'])
 def logout():
     # in a real implementation with token blacklist
-    return jsonify({'message': 'Logout successful'}), 200 
+    return jsonify({'message': 'Logout successful'}), 200
+
+@bp.route('/user', methods=['GET'])
+def get_user():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'message': 'Missing or invalid token'}), 401
+        
+    token = auth_header.split(' ')[1]
+    try:
+        # Verify and decode the token
+        payload = verify_token(token)
+        if not payload:
+            return jsonify({'message': 'Invalid token'}), 401
+            
+        db = get_db()
+        if not db:
+            return jsonify({'message': 'Database connection error'}), 500
+            
+        cursor = db.cursor(dictionary=True)
+        
+        try:
+            # Get user data from database using the subject from token
+            cursor.execute('SELECT user, discord_user_id, power FROM clients WHERE user = %s', (payload['sub'],))
+            user_data = cursor.fetchone()
+            
+            if not user_data:
+                return jsonify({'message': 'User not found'}), 404
+                
+            return jsonify(user_data), 200
+            
+        except Exception as e:
+            logger.error(f"Error fetching user data: {e}")
+            return jsonify({'message': 'Error fetching user data'}), 500
+        finally:
+            cursor.close()
+            db.close()
+            
+    except Exception as e:
+        logger.error(f"Token verification error: {e}")
+        return jsonify({'message': 'Invalid token'}), 401 

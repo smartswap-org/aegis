@@ -3,12 +3,15 @@ from flask import request, jsonify
 import jwt
 from datetime import datetime, timedelta
 from config import Config
+import time
+from loguru import logger
 
 def generate_token(user_data):
-    """Generate a JWT token for a user."""
+    """Generate a JWT token for the given user data"""
     try:
+        expiration = datetime.utcnow() + timedelta(days=1)
         payload = {
-            'exp': datetime.utcnow() + timedelta(days=1),
+            'exp': expiration,
             'iat': datetime.utcnow(),
             'sub': user_data['user'],
             'discord_user_id': user_data.get('discord_user_id')
@@ -18,7 +21,27 @@ def generate_token(user_data):
             Config.get_flask_config()['secret_key'],
             algorithm='HS256'
         )
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error generating token: {e}")
+        return None
+
+def verify_token(token):
+    """Verify and decode a JWT token"""
+    try:
+        payload = jwt.decode(
+            token, 
+            Config.get_flask_config()['secret_key'],
+            algorithms=['HS256']
+        )
+        return payload
+    except jwt.ExpiredSignatureError:
+        logger.warning("Token has expired")
+        return None
+    except jwt.InvalidTokenError as e:
+        logger.warning(f"Invalid token: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Error verifying token: {e}")
         return None
 
 def token_required(f):
@@ -68,31 +91,26 @@ def is_wallet_owner(user, wallet_name, db):
     finally:
         cursor.close()
 
-def rate_limit(max_requests=100, window=60):
-    """Decorator to limit request rate."""
+def rate_limit(max_requests, window):
+    """Rate limiting decorator"""
     def decorator(f):
-        # store requests by IP
         requests = {}
         
         @wraps(f)
-        def decorated_function(*args, **kwargs):
-            # get client IP
+        def wrapped(*args, **kwargs):
             ip = request.remote_addr
-            now = datetime.now()
+            now = time.time()
             
-            # clean old requests
-            if ip in requests:
-                requests[ip] = [req for req in requests[ip] if (now - req).total_seconds() < window]
-            
-            # check limit
-            if ip in requests and len(requests[ip]) >= max_requests:
-                return jsonify({'message': 'Too many requests'}), 429
-            
-            # add request
             if ip not in requests:
                 requests[ip] = []
-            requests[ip].append(now)
+            requests[ip] = [t for t in requests[ip] if t > now - window]
             
+            if len(requests[ip]) >= max_requests:
+                return jsonify({
+                    'message': 'Too many requests. Please try again later.'
+                }), 429
+                
+            requests[ip].append(now)
             return f(*args, **kwargs)
-        return decorated_function
+        return wrapped
     return decorator 
