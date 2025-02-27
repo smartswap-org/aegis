@@ -3,6 +3,7 @@ from api.database import get_db
 from api.utils.crypt_password import encrypt_password, check_password
 from api.utils.auth import generate_token, rate_limit, verify_token
 from loguru import logger
+from user_agents import parse as ua_parse
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
@@ -80,7 +81,7 @@ def login():
             
         client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
         user_agent_string = request.headers.get('User-Agent', '')
-        user_agent = parse(user_agent_string)
+        user_agent = ua_parse(user_agent_string)
         
         accept_language = request.headers.get('Accept-Language', '').split(',')[0]
         referrer = request.headers.get('Referer', '')
