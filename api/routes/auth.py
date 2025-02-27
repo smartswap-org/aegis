@@ -78,6 +78,55 @@ def login():
         if not user or not check_password(data['password'], user['password']):
             return jsonify({'message': 'Invalid username or password'}), 401
             
+        client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        user_agent_string = request.headers.get('User-Agent', '')
+        user_agent = parse(user_agent_string)
+        
+        accept_language = request.headers.get('Accept-Language', '').split(',')[0]
+        referrer = request.headers.get('Referer', '')
+        
+        cursor.execute('''
+            INSERT INTO connection_logs (
+                user, ip_address, user_agent, browser, browser_version,
+                os, os_version, device_type, language, is_mobile,
+                is_tablet, is_bot, referrer
+            ) VALUES (
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s
+            )
+        ''', (
+            user['user'],
+            client_ip,
+            user_agent_string,
+            user_agent.browser.family,
+            user_agent.browser.version_string,
+            user_agent.os.family,
+            user_agent.os.version_string,
+            user_agent.device.family,
+            accept_language,
+            user_agent.is_mobile,
+            user_agent.is_tablet,
+            user_agent.is_bot,
+            referrer
+        ))
+        
+        cursor.execute('''
+            DELETE FROM connection_logs 
+            WHERE user = %s 
+            AND id NOT IN (
+                SELECT id FROM (
+                    SELECT id 
+                    FROM connection_logs 
+                    WHERE user = %s 
+                    ORDER BY connection_date DESC 
+                    LIMIT 10
+                ) AS latest
+            )
+        ''', (user['user'], user['user']))
+        
+        db.commit()
+            
         # generate JWT token
         token = generate_token({
             'user': user['user'],
@@ -92,6 +141,7 @@ def login():
         
     except Exception as e:
         logger.error(f"Error during login: {e}")
+        db.rollback()
         return jsonify({'message': f'Error during login: {str(e)}'}), 500
     finally:
         cursor.close()
