@@ -1,5 +1,5 @@
 from flask import Flask, redirect, send_from_directory
-from api.routes import auth, positions, funds, wallets
+from api.routes import auth, positions, funds, wallets, dashboard
 from api.docs import bp as docs_bp
 from config import Config
 
@@ -30,6 +30,7 @@ app.register_blueprint(auth.bp)
 app.register_blueprint(positions.bp)
 app.register_blueprint(funds.bp)
 app.register_blueprint(wallets.bp)
+app.register_blueprint(dashboard.bp)
 app.register_blueprint(docs_bp)
 
 # serve static assets

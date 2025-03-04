@@ -197,4 +197,31 @@ def revoke_wallet_access(current_user, client_user, wallet_name):
         return jsonify({'message': f'Error revoking wallet access: {str(e)}'}), 500
     finally:
         cursor.close()
+        db.close()
+
+@bp.route('/list', methods=['GET'])
+@token_required
+def list_client_wallets(current_user):
+    db = get_db()
+    if not db:
+        return jsonify({'message': 'Database connection error'}), 500
+        
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        cursor.execute('''
+            SELECT w.name, w.address 
+            FROM wallets w
+            JOIN wallets_access wa ON w.name = wa.wallet_name
+            WHERE wa.client_user = %s
+        ''', (current_user,))
+        
+        wallets = cursor.fetchall()
+        return jsonify(wallets), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching wallets: {e}")
+        return jsonify({'message': f'Error fetching wallets: {str(e)}'}), 500
+    finally:
+        cursor.close()
         db.close() 
