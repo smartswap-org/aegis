@@ -68,8 +68,7 @@ def test_wallet(client, auth_token):
 @pytest.fixture
 def test_bot(client, auth_token, test_wallet):
     data = {
-        'bot_name': 'testbot',
-        'wallet_name': test_wallet,
+        'name': 'testbot',
         'exchange_name': 'Binance',
         'pairs': '["BTC/USDT"]',
         'strategy': 'test_strategy',
@@ -84,7 +83,7 @@ def test_bot(client, auth_token, test_wallet):
     response = client.post('/api/bots/', json=data, headers=headers)
     if response.status_code != 201:
         pytest.fail(f"Failed to create bot: {response.data}")
-    return data['bot_name']
+    return data['name']
 
 @pytest.mark.run(order=1)
 def test_home_route(client):

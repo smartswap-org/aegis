@@ -4,6 +4,7 @@ from api.database import get_db
 from loguru import logger
 import jwt
 import os
+from config import Config
 
 # Secret key for JWT
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key')
@@ -88,6 +89,7 @@ wallets_ns = api.namespace('wallets', description='Wallet management')
 positions_ns = api.namespace('positions', description='Trading operations')
 funds_ns = api.namespace('funds', description='Fund management')
 dashboard_ns = api.namespace('dashboard', description='Dashboard operations')
+bots_ns = api.namespace('bots', description='Bot management')
 
 # models for request/response validation
 register_model = api.model('Register', {
@@ -269,6 +271,37 @@ trade_detail_model = api.model('TradeDetail', {
     'fund_slot': fields.Integer(description='Fund slot')
 })
 
+bot_model = api.model('Bot', {
+    'name': fields.String(required=True, description='Bot name'),
+    'strategy': fields.String(required=True, description='Trading strategy'),
+    'exchange_name': fields.String(required=True, description='Exchange name'),
+    'pairs': fields.String(required=True, description='Trading pairs'),
+    'reinvest_gains': fields.Boolean(required=False, description='Whether to reinvest gains', default=False),
+    'position_percent_invest': fields.Float(required=False, description='Percentage to invest per position', default=100.0),
+    'invest_capital': fields.Float(required=False, description='Initial capital to invest', default=0.0),
+    'adjust_with_profits_if_loss': fields.Boolean(required=False, description='Adjust capital with profits if loss occurs', default=False),
+    'timeframe': fields.String(required=False, description='Trading timeframe', default='1h'),
+    'simulation': fields.Boolean(required=False, description='Whether this is a simulation bot', default=False),
+    'status': fields.Boolean(required=False, description='Bot status (active/inactive)', default=False)
+})
+
+bot_response = api.model('BotResponse', {
+    'id': fields.Integer(description='Bot ID'),
+    'name': fields.String(description='Bot name'),
+    'strategy': fields.String(description='Trading strategy'),
+    'exchange_name': fields.String(description='Exchange name'),
+    'pairs': fields.String(description='Trading pairs'),
+    'reinvest_gains': fields.Boolean(description='Whether to reinvest gains'),
+    'position_percent_invest': fields.Float(description='Percentage to invest per position'),
+    'invest_capital': fields.Float(description='Initial capital to invest'),
+    'adjust_with_profits_if_loss': fields.Boolean(description='Adjust capital with profits if loss occurs'),
+    'timeframe': fields.String(description='Trading timeframe'),
+    'simulation': fields.Boolean(description='Whether this is a simulation bot'),
+    'status': fields.Boolean(description='Bot status'),
+    'current_funds': fields.Float(description='Current funds'),
+    'total_positions': fields.Integer(description='Total number of positions')
+})
+
 # authentication endpoints
 @auth_ns.route('/register')
 class Register(Resource):
@@ -323,7 +356,7 @@ class UserInfo(Resource):
 
             try:
                 # Décoder le token JWT
-                payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+                payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
                 username = payload.get('user')
                 if not username:
                     return {'error': 'Invalid token'}, 401
@@ -374,7 +407,7 @@ class AuthCheck(Resource):
 
             try:
                 # Décoder le token JWT
-                payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+                payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
                 username = payload.get('user')
                 if not username:
                     return {'authenticated': False}, 401
@@ -780,4 +813,233 @@ class TradeDetails(Resource):
     @dashboard_ns.response(500, 'Server error')
     def get(self, position_id):
         """Get detailed information about a specific trade"""
-        pass 
+        pass
+
+@bots_ns.route('/')
+class BotList(Resource):
+    @bots_ns.doc(security='Bearer')
+    @bots_ns.expect(bot_model)
+    @bots_ns.response(201, 'Bot created successfully', bot_response)
+    @bots_ns.response(400, 'Invalid data')
+    @bots_ns.response(401, 'Unauthorized')
+    @bots_ns.response(409, 'Bot name already exists')
+    @bots_ns.response(500, 'Server error')
+    def post(self):
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not token:
+            return {'error': 'No token provided'}, 401
+
+        try:
+            payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
+            username = payload.get('sub')
+            if not username:
+                return {'error': 'Invalid token'}, 401
+        except jwt.InvalidTokenError:
+            return {'error': 'Invalid token'}, 401
+
+        data = request.get_json()
+        
+        required_fields = ['name', 'strategy', 'exchange_name', 'pairs']
+        for field in required_fields:
+            if not data or not data.get(field):
+                return {'message': f'Missing required field: {field}'}, 400
+            
+        db = get_db()
+        if not db:
+            return {'message': 'Database connection error'}, 500
+            
+        cursor = db.cursor(dictionary=True)
+        
+        try:
+            cursor.execute('SELECT bot_id FROM bots WHERE bot_name = %s', (data['name'],))
+            if cursor.fetchone():
+                return {'message': 'Bot name already exists'}, 409
+
+            cursor.execute('''
+                INSERT INTO bots (
+                    bot_name, strategy, exchange_name, pairs,
+                    reinvest_gains, position_percent_invest, invest_capital,
+                    adjust_with_profits_if_loss, timeframe, simulation, status
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                data['name'],
+                data['strategy'],
+                data['exchange_name'],
+                data['pairs'],
+                data.get('reinvest_gains', False),
+                data.get('position_percent_invest', 100.0),
+                data.get('invest_capital', 0.0),
+                data.get('adjust_with_profits_if_loss', False),
+                data.get('timeframe', '1h'),
+                data.get('simulation', False),
+                data.get('status', False)
+            ))
+            db.commit()
+            
+            bot_id = cursor.lastrowid
+            
+            return {
+                'id': bot_id,
+                'name': data['name'],
+                'strategy': data['strategy'],
+                'exchange_name': data['exchange_name'],
+                'pairs': data['pairs'],
+                'reinvest_gains': data.get('reinvest_gains', False),
+                'position_percent_invest': data.get('position_percent_invest', 100.0),
+                'invest_capital': data.get('invest_capital', 0.0),
+                'adjust_with_profits_if_loss': data.get('adjust_with_profits_if_loss', False),
+                'timeframe': data.get('timeframe', '1h'),
+                'simulation': data.get('simulation', False),
+                'status': data.get('status', False)
+            }, 201
+            
+        except Exception as e:
+            logger.error(f"Error creating bot: {e}")
+            db.rollback()
+            return {'message': f'Error creating bot: {str(e)}'}, 500
+        finally:
+            cursor.close()
+            db.close()
+
+    @bots_ns.doc(security='Bearer')
+    @bots_ns.response(200, 'Success', [bot_response])
+    @bots_ns.response(401, 'Unauthorized')
+    @bots_ns.response(500, 'Server error')
+    def get(self):
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not token:
+            return {'error': 'No token provided'}, 401
+
+        try:
+            payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
+            username = payload.get('sub')
+            if not username:
+                return {'error': 'Invalid token'}, 401
+        except jwt.InvalidTokenError:
+            return {'error': 'Invalid token'}, 401
+
+        db = get_db()
+        if not db:
+            return {'message': 'Database connection error'}, 500
+            
+        cursor = db.cursor(dictionary=True)
+        
+        try:
+            cursor.execute('''
+                SELECT 
+                    b.bot_id as id,
+                    b.bot_name as name,
+                    b.strategy,
+                    b.exchange_name,
+                    b.pairs,
+                    b.reinvest_gains,
+                    b.position_percent_invest,
+                    b.invest_capital,
+                    b.adjust_with_profits_if_loss,
+                    b.timeframe,
+                    b.simulation,
+                    b.status,
+                    f.funds as current_funds,
+                    COUNT(DISTINCT p.position_id) as total_positions
+                FROM bots b
+                LEFT JOIN (
+                    SELECT bot_id, funds
+                    FROM funds f1
+                    WHERE id = (
+                        SELECT MAX(id)
+                        FROM funds f2
+                        WHERE f1.bot_id = f2.bot_id
+                    )
+                ) f ON b.bot_id = f.bot_id
+                LEFT JOIN cex_market p ON b.bot_id = p.bot_id
+                GROUP BY b.bot_id, f.funds
+                ORDER BY b.bot_id DESC
+            ''')
+            bots = cursor.fetchall()
+            
+            return {'bots': bots}, 200
+            
+        except Exception as e:
+            logger.error(f"Error fetching bots: {e}")
+            return {'message': f'Error fetching bots: {str(e)}'}, 500
+        finally:
+            cursor.close()
+            db.close()
+
+@bots_ns.route('/<bot_name>')
+class Bot(Resource):
+    @bots_ns.doc(security='Bearer')
+    @bots_ns.response(200, 'Success', bot_response)
+    @bots_ns.response(401, 'Unauthorized')
+    @bots_ns.response(404, 'Bot not found')
+    @bots_ns.response(500, 'Server error')
+    def get(self, bot_name):
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not token:
+            return {'error': 'No token provided'}, 401
+
+        try:
+            payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
+            username = payload.get('sub')
+            if not username:
+                return {'error': 'Invalid token'}, 401
+        except jwt.InvalidTokenError:
+            return {'error': 'Invalid token'}, 401
+
+        db = get_db()
+        if not db:
+            return {'message': 'Database connection error'}, 500
+            
+        cursor = db.cursor(dictionary=True)
+        
+        try:
+            cursor.execute('''
+                SELECT 
+                    bot_id as id,
+                    bot_name as name,
+                    strategy,
+                    exchange_name,
+                    pairs,
+                    reinvest_gains,
+                    position_percent_invest,
+                    invest_capital,
+                    adjust_with_profits_if_loss,
+                    timeframe,
+                    simulation,
+                    status
+                FROM bots
+                WHERE bot_name = %s
+            ''', (bot_name,))
+            
+            bot = cursor.fetchone()
+            if not bot:
+                return {'message': 'Bot not found'}, 404
+
+            cursor.execute('''
+                SELECT funds
+                FROM funds
+                WHERE bot_id = %s
+                ORDER BY id DESC
+                LIMIT 1
+            ''', (bot['id'],))
+            
+            funds_row = cursor.fetchone()
+            bot['current_funds'] = funds_row['funds'] if funds_row else None
+
+            cursor.execute('''
+                SELECT COUNT(DISTINCT position_id) as total
+                FROM cex_market
+                WHERE bot_id = %s
+            ''', (bot['id'],))
+            
+            positions = cursor.fetchone()
+            bot['total_positions'] = positions['total'] if positions else 0
+                
+            return bot, 200
+            
+        except Exception as e:
+            logger.error(f"Error fetching bot: {e}")
+            return {'message': f'Error fetching bot: {str(e)}'}, 500
+        finally:
+            cursor.close()
+            db.close() 

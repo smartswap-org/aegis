@@ -1,16 +1,14 @@
 from flask import Blueprint, request, jsonify
 from api.database import get_db
-from api.utils.auth import token_required
 from loguru import logger
 
 bp = Blueprint('bots', __name__, url_prefix='/api/bots')
 
 @bp.route('/', methods=['POST'])
-@token_required
-def create_bot(current_user):
+def create_bot():
     data = request.get_json()
     
-    if not data or not data.get('bot_name') or not data.get('wallet_name'):
+    if not data or not data.get('name') or not data.get('strategy'):
         return jsonify({'message': 'Missing required fields'}), 400
         
     db = get_db()
@@ -20,46 +18,23 @@ def create_bot(current_user):
     cursor = db.cursor(dictionary=True)
     
     try:
-        # Check if bot name already exists
-        cursor.execute('SELECT bot_id FROM bots WHERE bot_name = %s', (data['bot_name'],))
+        cursor.execute('SELECT bot_id FROM bots WHERE bot_name = %s', (data['name'],))
         if cursor.fetchone():
-            return jsonify({'message': 'Bot name already exists'}), 400
-            
-        # Check if wallet exists
-        cursor.execute('SELECT name FROM wallets WHERE name = %s', (data['wallet_name'],))
-        wallet = cursor.fetchone()
-        if not wallet:
-            return jsonify({'message': 'Wallet not found'}), 404
+            return jsonify({'message': 'Bot name already exists'}), 409
 
-        # Create bot
         cursor.execute('''
-            INSERT INTO bots (
-                client_user, wallet_name, bot_name, exchange_name, pairs,
-                strategy, reinvest_gains, position_percent_invest, invest_capital,
-                adjust_with_profits_if_loss, timeframe, simulation, status
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (
-            current_user,
-            data['wallet_name'],
-            data['bot_name'],
-            data.get('exchange_name', 'Binance'),
-            data.get('pairs', '[]'),
-            data.get('strategy', 'default'),
-            data.get('reinvest_gains', True),
-            data.get('position_percent_invest', 50.00),
-            data.get('invest_capital', 1000.00),
-            data.get('adjust_with_profits_if_loss', True),
-            data.get('timeframe', '1h'),
-            data.get('simulation', True),
-            False
-        ))
-        bot_id = cursor.lastrowid
+            INSERT INTO bots (bot_name, strategy, status)
+            VALUES (%s, %s, %s)
+        ''', (data['name'], data['strategy'], data.get('status', 'inactive')))
         db.commit()
         
+        bot_id = cursor.lastrowid
+        
         return jsonify({
-            'message': 'Bot created successfully',
-            'bot_id': bot_id,
-            'bot_name': data['bot_name']
+            'id': bot_id,
+            'name': data['name'],
+            'strategy': data['strategy'],
+            'status': data.get('status', 'inactive')
         }), 201
         
     except Exception as e:
@@ -71,8 +46,7 @@ def create_bot(current_user):
         db.close()
 
 @bp.route('/', methods=['GET'])
-@token_required
-def get_bots(current_user):
+def get_bots():
     db = get_db()
     if not db:
         return jsonify({'message': 'Database connection error'}), 500
@@ -81,10 +55,9 @@ def get_bots(current_user):
     
     try:
         cursor.execute('''
-            SELECT b.bot_id, b.bot_name, b.description, b.wallet_name
-            FROM bots b
-            JOIN wallets w ON b.wallet_id = w.wallet_id
-            ORDER BY b.bot_name
+            SELECT bot_id as id, bot_name as name, strategy, status, created_at
+            FROM bots
+            ORDER BY created_at DESC
         ''')
         bots = cursor.fetchall()
         
@@ -98,8 +71,7 @@ def get_bots(current_user):
         db.close()
 
 @bp.route('/<bot_name>', methods=['GET'])
-@token_required
-def get_bot(current_user, bot_name):
+def get_bot(bot_name):
     db = get_db()
     if not db:
         return jsonify({'message': 'Database connection error'}), 500
@@ -108,10 +80,21 @@ def get_bot(current_user, bot_name):
     
     try:
         cursor.execute('''
-            SELECT b.bot_id, b.bot_name, b.description, w.name as wallet_name
+            SELECT 
+                b.bot_id as id,
+                b.bot_name as name,
+                b.strategy,
+                b.status,
+                b.created_at,
+                f.funds as current_funds,
+                COUNT(DISTINCT p.position_id) as total_positions
             FROM bots b
-            JOIN wallets w ON b.wallet_id = w.wallet_id
+            LEFT JOIN funds f ON b.bot_id = f.bot_id
+            LEFT JOIN cex_market p ON b.bot_id = p.bot_id
             WHERE b.bot_name = %s
+            GROUP BY b.bot_id, f.funds
+            ORDER BY f.id DESC
+            LIMIT 1
         ''', (bot_name,))
         bot = cursor.fetchone()
         
