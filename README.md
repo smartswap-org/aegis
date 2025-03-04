@@ -51,7 +51,7 @@ AEGIS is an API that securely manages users, wallets, trading positions, and fun
 
 ## Tests
   ```bash
-  pytest tests/test_routes.py -v
+  pytest tests/test_routes.py 
   ```
 
   ```Python
