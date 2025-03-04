@@ -16,23 +16,31 @@ def get_overview(current_user, bot_name):
     cursor = db.cursor(dictionary=True)
     
     try:
+        cursor.execute('SELECT bot_id FROM bots WHERE bot_name = %s', (bot_name,))
+        bot = cursor.fetchone()
+        if not bot:
+            return jsonify({
+                'message': 'Bot not found'
+            }), 404
+
         now = datetime.now()
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
         
         cursor.execute('''
             SELECT 
-                position_id,
-                buy_value_usdt,
-                sell_value_usdt,
-                buy_fees,
-                sell_fees,
-                sell_date,
-                (sell_value_usdt - buy_value_usdt - buy_fees - sell_fees) as profit
-            FROM cex_market 
-            WHERE sell_date IS NOT NULL
-            AND bot_name = %s
-            ORDER BY sell_date ASC
+                cm.position_id,
+                cm.buy_value_usdt,
+                cm.sell_value_usdt,
+                cm.buy_fees,
+                cm.sell_fees,
+                cm.sell_date,
+                (cm.sell_value_usdt - cm.buy_value_usdt - cm.buy_fees - cm.sell_fees) as profit
+            FROM cex_market cm
+            JOIN bots b ON cm.bot_id = b.bot_id
+            WHERE cm.sell_date IS NOT NULL
+            AND b.bot_name = %s
+            ORDER BY cm.sell_date ASC
         ''', (bot_name,))
         positions = cursor.fetchall()
         
@@ -141,27 +149,35 @@ def get_performance(current_user, bot_name):
     cursor = db.cursor(dictionary=True)
     
     try:
+        cursor.execute('SELECT bot_id FROM bots WHERE bot_name = %s', (bot_name,))
+        bot = cursor.fetchone()
+        if not bot:
+            return jsonify({
+                'message': 'Bot not found'
+            }), 404
+
         if interval == 'daily':
             date_format = '%Y-%m-%d'
-            group_by = 'DATE(sell_date)'
+            group_by = 'DATE(cm.sell_date)'
         elif interval == 'weekly':
             date_format = '%Y-%U'
-            group_by = 'YEARWEEK(sell_date)'
+            group_by = 'YEARWEEK(cm.sell_date)'
         elif interval == 'monthly':
             date_format = '%Y-%m'
-            group_by = 'DATE_FORMAT(sell_date, "%Y-%m")'
+            group_by = 'DATE_FORMAT(cm.sell_date, "%Y-%m")'
         else:
             return jsonify({'message': 'Invalid interval'}), 400
             
         cursor.execute(f'''
             SELECT 
                 {group_by} as date_group,
-                DATE_FORMAT(MIN(sell_date), %s) as period,
-                SUM(sell_value_usdt - buy_value_usdt - buy_fees - sell_fees) as profit,
+                DATE_FORMAT(MIN(cm.sell_date), %s) as period,
+                SUM(cm.sell_value_usdt - cm.buy_value_usdt - cm.buy_fees - cm.sell_fees) as profit,
                 COUNT(*) as trades
-            FROM cex_market 
-            WHERE sell_date IS NOT NULL
-            AND bot_name = %s
+            FROM cex_market cm
+            JOIN bots b ON cm.bot_id = b.bot_id
+            WHERE cm.sell_date IS NOT NULL
+            AND b.bot_name = %s
             GROUP BY date_group
             ORDER BY date_group ASC
         ''', (date_format, bot_name))
@@ -206,33 +222,53 @@ def get_recent_trades(current_user, bot_name):
     cursor = db.cursor(dictionary=True)
     
     try:
+        cursor.execute('SELECT bot_id FROM bots WHERE bot_name = %s', (bot_name,))
+        bot = cursor.fetchone()
+        if not bot:
+            return jsonify({
+                'message': 'Bot not found'
+            }), 404
+
         cursor.execute('''
             SELECT COUNT(*) as total
-            FROM cex_market
-            WHERE sell_date IS NOT NULL
-            AND bot_name = %s
+            FROM cex_market cm
+            JOIN bots b ON cm.bot_id = b.bot_id
+            WHERE b.bot_name = %s
         ''', (bot_name,))
         total = cursor.fetchone()['total']
         
         cursor.execute('''
             SELECT 
-                position_id,
-                pair,
-                buy_price as entry_price,
-                sell_value_usdt - buy_value_usdt - buy_fees - sell_fees as profit_loss,
-                ((sell_value_usdt - buy_value_usdt - buy_fees - sell_fees) / buy_value_usdt * 100) as profit_loss_percentage,
-                TIMESTAMPDIFF(DAY, buy_date, sell_date) as duration_days,
-                buy_date,
-                sell_date,
-                exchange,
-                buy_value_usdt,
-                sell_value_usdt,
-                buy_fees,
-                sell_fees
-            FROM cex_market
-            WHERE sell_date IS NOT NULL
-            AND bot_name = %s
-            ORDER BY sell_date DESC
+                cm.position_id,
+                cm.pair,
+                cm.buy_price as entry_price,
+                CASE 
+                    WHEN cm.sell_date IS NOT NULL THEN cm.sell_value_usdt - cm.buy_value_usdt - COALESCE(cm.buy_fees, 0) - COALESCE(cm.sell_fees, 0)
+                    ELSE NULL
+                END as profit_loss,
+                CASE 
+                    WHEN cm.sell_date IS NOT NULL THEN ((cm.sell_value_usdt - cm.buy_value_usdt - COALESCE(cm.buy_fees, 0) - COALESCE(cm.sell_fees, 0)) / cm.buy_value_usdt * 100)
+                    ELSE NULL
+                END as profit_loss_percentage,
+                CASE 
+                    WHEN cm.sell_date IS NOT NULL THEN TIMESTAMPDIFF(DAY, cm.buy_date, cm.sell_date)
+                    ELSE TIMESTAMPDIFF(DAY, cm.buy_date, NOW())
+                END as duration_days,
+                cm.buy_date,
+                cm.sell_date,
+                cm.exchange,
+                cm.buy_value_usdt,
+                cm.sell_value_usdt,
+                cm.buy_fees,
+                cm.sell_fees,
+                CASE 
+                    WHEN cm.sell_date IS NULL THEN 'OPEN'
+                    ELSE 'CLOSED'
+                END as status
+            FROM cex_market cm
+            JOIN bots b ON cm.bot_id = b.bot_id
+            WHERE b.bot_name = %s
+            ORDER BY COALESCE(cm.sell_date, cm.buy_date) DESC
             LIMIT %s OFFSET %s
         ''', (bot_name, limit, offset))
         
@@ -267,29 +303,31 @@ def get_trade_details(current_user, position_id):
     try:
         cursor.execute('''
             SELECT 
-                position_id,
-                pair,
-                exchange,
-                buy_order_id,
-                buy_price,
-                buy_quantity,
-                buy_fees,
-                buy_value_usdt,
-                buy_date,
-                buy_signals,
-                sell_order_id,
-                sell_price,
-                sell_quantity,
-                sell_fees,
-                sell_value_usdt,
-                sell_date,
-                sell_signals,
-                ratio,
-                position_duration,
-                bot_name,
-                fund_slot
-            FROM cex_market
-            WHERE position_id = %s
+                cm.position_id,
+                cm.pair,
+                cm.exchange,
+                cm.buy_order_id,
+                cm.buy_price,
+                cm.buy_quantity,
+                cm.buy_fees,
+                cm.buy_value_usdt,
+                cm.buy_date,
+                cm.buy_signals,
+                cm.sell_order_id,
+                cm.sell_price,
+                cm.sell_quantity,
+                cm.sell_fees,
+                cm.sell_value_usdt,
+                cm.sell_date,
+                cm.sell_signals,
+                cm.ratio,
+                cm.position_duration,
+                cm.fund_slot,
+                b.bot_name,
+                b.bot_id
+            FROM cex_market cm
+            JOIN bots b ON cm.bot_id = b.bot_id
+            WHERE cm.position_id = %s
         ''', (position_id,))
         
         trade = cursor.fetchone()
