@@ -505,9 +505,11 @@ class WalletsList(Resource):
 # positions routes
 @positions_ns.route('/')
 class PositionList(Resource):
+    @positions_ns.doc(security='Bearer')
     @positions_ns.expect(position_model)
     @positions_ns.response(201, 'Position created successfully')
     @positions_ns.response(400, 'Invalid data')
+    @positions_ns.response(401, 'Unauthorized')
     @positions_ns.response(500, 'Server error')
     def post(self):
         """Create a new position"""
@@ -553,7 +555,10 @@ class PositionList(Resource):
             cursor.close()
             db.close()
 
+    @positions_ns.doc(security='Bearer')
     @positions_ns.response(200, 'Success', [position_response])
+    @positions_ns.response(401, 'Unauthorized')
+    @positions_ns.response(500, 'Server error')
     def get(self):
         """Get all positions"""
         db = get_db()
@@ -579,8 +584,10 @@ class PositionList(Resource):
 
 @positions_ns.route('/<int:position_id>/sell')
 class PositionSell(Resource):
+    @positions_ns.doc(security='Bearer')
     @positions_ns.expect(position_update_model)
     @positions_ns.response(200, 'Position updated successfully')
+    @positions_ns.response(401, 'Unauthorized')
     @positions_ns.response(404, 'Position not found')
     @positions_ns.response(500, 'Server error')
     def put(self, position_id):
