@@ -263,10 +263,10 @@ trade_detail_model = api.model('TradeDetail', {
     'sell_value_usdt': fields.Float(description='Sell value in USDT'),
     'sell_date': fields.DateTime(description='Sell date'),
     'sell_signals': fields.String(description='Sell signals'),
-    'ratio': fields.Float(description='Profit ratio'),
+    'ratio': fields.Float(description='Profit/Loss ratio'),
     'position_duration': fields.Integer(description='Position duration in seconds'),
     'bot_name': fields.String(description='Bot name'),
-    'fund_slot': fields.Integer(description='Fund slot number')
+    'fund_slot': fields.Integer(description='Fund slot')
 })
 
 # authentication endpoints

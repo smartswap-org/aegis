@@ -9,7 +9,6 @@ bp = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
 @bp.route('/overview/<bot_name>', methods=['GET'])
 @token_required
 def get_overview(current_user, bot_name):
-    """Get total balance, profit, and win rate statistics for a specific bot"""
     db = get_db()
     if not db:
         return jsonify({'message': 'Database connection error'}), 500
@@ -134,7 +133,6 @@ def get_overview(current_user, bot_name):
 @bp.route('/performance/<bot_name>', methods=['GET'])
 @token_required
 def get_performance(current_user, bot_name):
-    """Get performance data for graphing for a specific bot"""
     interval = request.args.get('interval', 'daily')
     db = get_db()
     if not db:
@@ -170,7 +168,6 @@ def get_performance(current_user, bot_name):
         
         performance_data = cursor.fetchall()
         
-        # Calculate running balance
         running_balance = 0
         result = []
         
@@ -198,7 +195,6 @@ def get_performance(current_user, bot_name):
 @bp.route('/recent-trades/<bot_name>', methods=['GET'])
 @token_required
 def get_recent_trades(current_user, bot_name):
-    """Get list of recent trades for a specific bot"""
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 10))
     offset = (page - 1) * limit
@@ -210,7 +206,6 @@ def get_recent_trades(current_user, bot_name):
     cursor = db.cursor(dictionary=True)
     
     try:
-        # Get total count for the specific bot
         cursor.execute('''
             SELECT COUNT(*) as total
             FROM cex_market
@@ -219,7 +214,6 @@ def get_recent_trades(current_user, bot_name):
         ''', (bot_name,))
         total = cursor.fetchone()['total']
         
-        # Get paginated trades for the specific bot
         cursor.execute('''
             SELECT 
                 position_id,
@@ -264,7 +258,6 @@ def get_recent_trades(current_user, bot_name):
 @bp.route('/trades/<int:position_id>', methods=['GET'])
 @token_required
 def get_trade_details(current_user, position_id):
-    """Get detailed information about a specific trade"""
     db = get_db()
     if not db:
         return jsonify({'message': 'Database connection error'}), 500
@@ -311,4 +304,4 @@ def get_trade_details(current_user, position_id):
         return jsonify({'message': f'Error fetching trade details: {str(e)}'}), 500
     finally:
         cursor.close()
-        db.close() 
+        db.close()

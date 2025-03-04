@@ -25,7 +25,7 @@ def test_register(client):
         'password': 'testpassword'
     }
     response = client.post('/api/auth/register', json=data)
-    assert response.status_code in [201, 400]  # 201 if created, 400 if already exists
+    assert response.status_code in [201, 400]
 
 def test_login(client):
     data = {

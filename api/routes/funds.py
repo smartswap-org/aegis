@@ -21,7 +21,6 @@ def create_fund():
     cursor = db.cursor(dictionary=True)
     
     try:
-        # get last position id for this bot
         cursor.execute('''
             SELECT position_id 
             FROM cex_market 
@@ -32,7 +31,6 @@ def create_fund():
         result = cursor.fetchone()
         last_position_id = result['position_id'] if result else 0
 
-        # create new fund
         cursor.execute('''
             INSERT INTO funds (bot_name, last_position_id, funds)
             VALUES (%s, %s, %s)

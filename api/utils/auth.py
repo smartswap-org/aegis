@@ -9,6 +9,7 @@ from loguru import logger
 def generate_token(user_data):
     """Generate a JWT token for the given user data"""
     try:
+        # set token expiration to 24 hours from now
         expiration = datetime.utcnow() + timedelta(days=1)
         payload = {
             'exp': expiration,
@@ -28,6 +29,7 @@ def generate_token(user_data):
 def verify_token(token):
     """Verify and decode a JWT token"""
     try:
+        # decode and validate jwt token
         payload = jwt.decode(
             token, 
             Config.get_flask_config()['secret_key'],
@@ -50,7 +52,7 @@ def token_required(f):
     def decorated(*args, **kwargs):
         token = None
         
-        # check if token is in header
+        # extract token from authorization header
         if 'Authorization' in request.headers:
             auth_header = request.headers['Authorization']
             try:
@@ -62,7 +64,7 @@ def token_required(f):
             return jsonify({'message': 'Missing token'}), 401
 
         try:
-            # decode token
+            # validate token and extract user
             data = jwt.decode(
                 token,
                 Config.get_flask_config()['secret_key'],
@@ -82,6 +84,7 @@ def is_wallet_owner(user, wallet_name, db):
     """Check if user has access to wallet."""
     cursor = db.cursor(dictionary=True)
     try:
+        # check if user has access to the wallet
         cursor.execute('''
             SELECT 1 
             FROM wallets_access 
@@ -94,6 +97,7 @@ def is_wallet_owner(user, wallet_name, db):
 def rate_limit(max_requests, window):
     """Rate limiting decorator"""
     def decorator(f):
+        # store request timestamps per ip
         requests = {}
         
         @wraps(f)
@@ -101,6 +105,7 @@ def rate_limit(max_requests, window):
             ip = request.remote_addr
             now = time.time()
             
+            # clean old requests and check limit
             if ip not in requests:
                 requests[ip] = []
             requests[ip] = [t for t in requests[ip] if t > now - window]
