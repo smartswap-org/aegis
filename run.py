@@ -1,17 +1,18 @@
 from flask import Flask, redirect, send_from_directory
-from api.routes import auth, positions, funds, wallets
+from api.routes import auth, positions, funds, wallets, dashboard
 from api.docs import bp as docs_bp
 from config import Config
 
+# initialize flask application
 app = Flask(__name__, static_folder='assets')
 
-# initialize flask configuration
+# load configuration from environment
 flask_config = Config.get_flask_config()
 app.config['SECRET_KEY'] = flask_config['secret_key']
 app.config['DEBUG'] = flask_config['debug']
 app.config['MYSQL_PORT'] = flask_config.get('port', 3306)
 
-# setup cross-origin resource sharing
+# setup cors with security settings for cross-origin requests
 from flask_cors import CORS
 CORS(app, 
      resources={r"/api/*": {
@@ -25,22 +26,21 @@ CORS(app,
      }}
 )
 
-# register api routes
+# register all api blueprints
 app.register_blueprint(auth.bp)
 app.register_blueprint(positions.bp)
 app.register_blueprint(funds.bp)
 app.register_blueprint(wallets.bp)
+app.register_blueprint(dashboard.bp)
 app.register_blueprint(docs_bp)
 
-# serve static assets
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
     return send_from_directory('assets', filename)
 
-# redirect root to api documentation
 @app.route('/')
 def index():
     return redirect('/api/', code=302)
 
 if __name__ == '__main__':
-    app.run(port=5001) 
+    app.run(port=5001)

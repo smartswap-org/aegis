@@ -6,7 +6,6 @@ from pathlib import Path
 import mysql.connector
 from mysql.connector import Error
 
-# add the parent directory to the PYTHONPATH
 project_root = str(Path(__file__).parent.parent.absolute())
 sys.path.insert(0, project_root)
 
@@ -124,17 +123,14 @@ def app_context():
     app.config['TESTING'] = True
     app.config['DEBUG'] = False
     
-    # test database configuration
     db_fd, db_path = tempfile.mkstemp()
     app.config['DATABASE'] = db_path
     
     with app.app_context():
-        # initialize the test database here if necessary
         pass
     
     yield app
     
-    # clean up the test database
     os.close(db_fd)
     os.unlink(db_path)
 

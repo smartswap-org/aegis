@@ -87,6 +87,7 @@ auth_ns = api.namespace('auth', description='Authentication operations')
 wallets_ns = api.namespace('wallets', description='Wallet management')
 positions_ns = api.namespace('positions', description='Trading operations')
 funds_ns = api.namespace('funds', description='Fund management')
+dashboard_ns = api.namespace('dashboard', description='Dashboard operations')
 
 # models for request/response validation
 register_model = api.model('Register', {
@@ -173,6 +174,99 @@ fund_response = api.model('FundResponse', {
     'bot_name': fields.String(description='Bot name'),
     'last_position_id': fields.Integer(description='Last position ID'),
     'funds': fields.Float(description='Fund amount')
+})
+
+# Add dashboard namespace
+dashboard_ns = api.namespace('dashboard', description='Dashboard operations')
+
+# Models for dashboard responses
+balance_model = api.model('Balance', {
+    'amount': fields.Float(description='Balance amount in USDT'),
+    'week_change_percentage': fields.Float(description='Weekly change percentage'),
+    'month_change_percentage': fields.Float(description='Monthly change percentage')
+})
+
+profit_period_model = api.model('ProfitPeriod', {
+    'amount': fields.Float(description='Profit amount in USDT'),
+    'percentage': fields.Float(description='Change percentage for the period')
+})
+
+profit_model = api.model('Profit', {
+    'all_time': fields.Float(description='All-time profit in USDT'),
+    'week': fields.Nested(profit_period_model),
+    'month': fields.Nested(profit_period_model)
+})
+
+win_rate_model = api.model('WinRate', {
+    'all_time': fields.Float(description='All-time win rate percentage'),
+    'week': fields.Float(description='Weekly win rate percentage'),
+    'month': fields.Float(description='Monthly win rate percentage')
+})
+
+overview_response = api.model('Overview', {
+    'total_balance': fields.Nested(balance_model),
+    'total_profit': fields.Nested(profit_model),
+    'win_rate': fields.Nested(win_rate_model)
+})
+
+performance_data_model = api.model('PerformanceData', {
+    'date': fields.String(description='Period date'),
+    'profit': fields.Float(description='Period profit'),
+    'balance': fields.Float(description='Running balance'),
+    'trades': fields.Integer(description='Number of trades in period')
+})
+
+performance_response = api.model('Performance', {
+    'interval': fields.String(description='Data interval (daily/weekly/monthly)'),
+    'data': fields.List(fields.Nested(performance_data_model))
+})
+
+trade_model = api.model('Trade', {
+    'position_id': fields.Integer(description='Position ID'),
+    'pair': fields.String(description='Trading pair'),
+    'entry_price': fields.Float(description='Entry price'),
+    'profit_loss': fields.Float(description='Profit/Loss in USDT'),
+    'profit_loss_percentage': fields.Float(description='Profit/Loss percentage'),
+    'duration_days': fields.Integer(description='Trade duration in days'),
+    'buy_date': fields.DateTime(description='Entry date'),
+    'sell_date': fields.DateTime(description='Exit date'),
+    'exchange': fields.String(description='Exchange name')
+})
+
+pagination_model = api.model('Pagination', {
+    'total': fields.Integer(description='Total number of records'),
+    'page': fields.Integer(description='Current page number'),
+    'limit': fields.Integer(description='Records per page'),
+    'pages': fields.Integer(description='Total number of pages')
+})
+
+trades_response = api.model('Trades', {
+    'trades': fields.List(fields.Nested(trade_model)),
+    'pagination': fields.Nested(pagination_model)
+})
+
+trade_detail_model = api.model('TradeDetail', {
+    'position_id': fields.Integer(description='Position ID'),
+    'pair': fields.String(description='Trading pair'),
+    'exchange': fields.String(description='Exchange name'),
+    'buy_order_id': fields.Integer(description='Buy order ID'),
+    'buy_price': fields.Float(description='Buy price'),
+    'buy_quantity': fields.Float(description='Buy quantity'),
+    'buy_fees': fields.Float(description='Buy fees'),
+    'buy_value_usdt': fields.Float(description='Buy value in USDT'),
+    'buy_date': fields.DateTime(description='Buy date'),
+    'buy_signals': fields.String(description='Buy signals'),
+    'sell_order_id': fields.Integer(description='Sell order ID'),
+    'sell_price': fields.Float(description='Sell price'),
+    'sell_quantity': fields.Float(description='Sell quantity'),
+    'sell_fees': fields.Float(description='Sell fees'),
+    'sell_value_usdt': fields.Float(description='Sell value in USDT'),
+    'sell_date': fields.DateTime(description='Sell date'),
+    'sell_signals': fields.String(description='Sell signals'),
+    'ratio': fields.Float(description='Profit/Loss ratio'),
+    'position_duration': fields.Integer(description='Position duration in seconds'),
+    'bot_name': fields.String(description='Bot name'),
+    'fund_slot': fields.Integer(description='Fund slot')
 })
 
 # authentication endpoints
@@ -400,12 +494,22 @@ class WalletAccessRevoke(Resource):
         """revoke wallet access from user"""
         pass
 
+@wallets_ns.route('/list')
+class WalletsList(Resource):
+    @wallets_ns.response(200, 'Success')
+    @wallets_ns.response(500, 'Server error')
+    def get(self):
+        """Get a list of all wallets that the authenticated client has access to"""
+        pass
+
 # positions routes
 @positions_ns.route('/')
 class PositionList(Resource):
+    @positions_ns.doc(security='Bearer')
     @positions_ns.expect(position_model)
     @positions_ns.response(201, 'Position created successfully')
     @positions_ns.response(400, 'Invalid data')
+    @positions_ns.response(401, 'Unauthorized')
     @positions_ns.response(500, 'Server error')
     def post(self):
         """Create a new position"""
@@ -451,7 +555,10 @@ class PositionList(Resource):
             cursor.close()
             db.close()
 
+    @positions_ns.doc(security='Bearer')
     @positions_ns.response(200, 'Success', [position_response])
+    @positions_ns.response(401, 'Unauthorized')
+    @positions_ns.response(500, 'Server error')
     def get(self):
         """Get all positions"""
         db = get_db()
@@ -477,8 +584,10 @@ class PositionList(Resource):
 
 @positions_ns.route('/<int:position_id>/sell')
 class PositionSell(Resource):
+    @positions_ns.doc(security='Bearer')
     @positions_ns.expect(position_update_model)
     @positions_ns.response(200, 'Position updated successfully')
+    @positions_ns.response(401, 'Unauthorized')
     @positions_ns.response(404, 'Position not found')
     @positions_ns.response(500, 'Server error')
     def put(self, position_id):
@@ -622,4 +731,53 @@ class Fund(Resource):
             return {'message': f'Error fetching fund: {str(e)}'}, 500
         finally:
             cursor.close()
-            db.close() 
+            db.close()
+
+# Dashboard routes
+@dashboard_ns.route('/overview/<bot_name>')
+@dashboard_ns.param('bot_name', 'Name of the bot to get overview for')
+class DashboardOverview(Resource):
+    @dashboard_ns.doc(security='Bearer')
+    @dashboard_ns.response(200, 'Success', overview_response)
+    @dashboard_ns.response(401, 'Unauthorized')
+    @dashboard_ns.response(500, 'Server error')
+    def get(self, bot_name):
+        """Get dashboard overview including total balance, profit, and win rates for a specific bot"""
+        pass
+
+@dashboard_ns.route('/performance/<bot_name>')
+@dashboard_ns.param('bot_name', 'Name of the bot to get performance for')
+class DashboardPerformance(Resource):
+    @dashboard_ns.doc(security='Bearer')
+    @dashboard_ns.param('interval', 'Data interval (daily/weekly/monthly)', _in='query', default='daily')
+    @dashboard_ns.response(200, 'Success', performance_response)
+    @dashboard_ns.response(400, 'Invalid interval')
+    @dashboard_ns.response(401, 'Unauthorized')
+    @dashboard_ns.response(500, 'Server error')
+    def get(self, bot_name):
+        """Get performance data for graphing for a specific bot"""
+        pass
+
+@dashboard_ns.route('/recent-trades/<bot_name>')
+@dashboard_ns.param('bot_name', 'Name of the bot to get trades for')
+class RecentTrades(Resource):
+    @dashboard_ns.doc(security='Bearer')
+    @dashboard_ns.param('page', 'Page number', _in='query', type=int, default=1)
+    @dashboard_ns.param('limit', 'Records per page', _in='query', type=int, default=10)
+    @dashboard_ns.response(200, 'Success', trades_response)
+    @dashboard_ns.response(401, 'Unauthorized')
+    @dashboard_ns.response(500, 'Server error')
+    def get(self, bot_name):
+        """Get list of recent trades for a specific bot"""
+        pass
+
+@dashboard_ns.route('/trades/<int:position_id>')
+class TradeDetails(Resource):
+    @dashboard_ns.doc(security='Bearer')
+    @dashboard_ns.response(200, 'Success', trade_detail_model)
+    @dashboard_ns.response(401, 'Unauthorized')
+    @dashboard_ns.response(404, 'Trade not found')
+    @dashboard_ns.response(500, 'Server error')
+    def get(self, position_id):
+        """Get detailed information about a specific trade"""
+        pass 

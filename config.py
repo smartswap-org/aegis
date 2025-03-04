@@ -3,16 +3,18 @@ from dotenv import load_dotenv
 import json
 from loguru import logger
 
-# load the environment variables from the .env file
+# load environment variables from .env file
 load_dotenv()
 
 class Config:
+    # singleton instance to store loaded configuration
     _config = None
 
     @staticmethod
     def load_config():
         if Config._config is None:
             try:
+                # load configuration from json file
                 with open('config.json', 'r') as f:
                     Config._config = json.load(f)
             except Exception as e:
@@ -29,17 +31,17 @@ class Config:
         Config.load_config()
         return Config._config['flask']
 
-    # application settings
+    # default configuration values
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'smartswap')
     
-    # database configurations    
+    # database connection settings
     MYSQL_HOST = os.getenv('MYSQL_HOST')
     MYSQL_USER = os.getenv('MYSQL_USER')
     MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE')
     MYSQL_PORT = int(os.getenv('MYSQL_PORT', 3306))
 
-    # flask configuration
+    # flask application settings
     FLASK_SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
     FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true' and os.getenv('FLASK_ENV', 'production') != 'production'
 

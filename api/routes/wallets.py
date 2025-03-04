@@ -8,7 +8,7 @@ bp = Blueprint('wallets', __name__, url_prefix='/api/wallets')
 
 @bp.route('/', methods=['POST'])
 @token_required
-@rate_limit(max_requests=50, window=3600)  # max 50 wallets per hour
+@rate_limit(max_requests=50, window=3600)
 def create_wallet(current_user):
     data = request.get_json()
     
@@ -22,19 +22,16 @@ def create_wallet(current_user):
     cursor = db.cursor(dictionary=True)
     
     try:
-        # check if wallet exists
         cursor.execute('SELECT name FROM wallets WHERE name = %s', (data['name'],))
         if cursor.fetchone():
             return jsonify({'message': 'Wallet name already exists'}), 400
             
-        # create new wallet with encrypted keys
         encrypted_keys = encrypt_keys(data['keys'])
         cursor.execute(
             'INSERT INTO wallets (name, address, `keys`) VALUES (%s, %s, %s)',
             (data['name'], data['address'], encrypted_keys)
         )
         
-        # automatically grant access to creator
         cursor.execute(
             'INSERT INTO wallets_access (client_user, wallet_name) VALUES (%s, %s)',
             (current_user, data['name'])
@@ -80,7 +77,6 @@ def get_wallet(current_user, wallet_name):
         if not wallet:
             return jsonify({'message': 'Wallet not found'}), 404
             
-        # decrypt keys before sending
         wallet['keys'] = decrypt_keys(wallet['keys'])
             
         return jsonify(wallet), 200
@@ -105,10 +101,8 @@ def delete_wallet(current_user, wallet_name):
     cursor = db.cursor(dictionary=True)
     
     try:
-        # delete access first
         cursor.execute('DELETE FROM wallets_access WHERE wallet_name = %s', (wallet_name,))
         
-        # then delete wallet
         cursor.execute('DELETE FROM wallets WHERE name = %s', (wallet_name,))
         db.commit()
         
@@ -140,17 +134,14 @@ def grant_wallet_access(current_user):
     cursor = db.cursor(dictionary=True)
     
     try:
-        # check if client exists
         cursor.execute('SELECT user FROM clients WHERE user = %s', (data['client_user'],))
         if not cursor.fetchone():
             return jsonify({'message': 'Client not found'}), 404
             
-        # check if wallet exists
         cursor.execute('SELECT name FROM wallets WHERE name = %s', (data['wallet_name'],))
         if not cursor.fetchone():
             return jsonify({'message': 'Wallet not found'}), 404
             
-        # grant access
         cursor.execute(
             'INSERT INTO wallets_access (client_user, wallet_name) VALUES (%s, %s)',
             (data['client_user'], data['wallet_name'])
@@ -195,6 +186,33 @@ def revoke_wallet_access(current_user, client_user, wallet_name):
         logger.error(f"Error revoking wallet access: {e}")
         db.rollback()
         return jsonify({'message': f'Error revoking wallet access: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        db.close()
+
+@bp.route('/list', methods=['GET'])
+@token_required
+def list_client_wallets(current_user):
+    db = get_db()
+    if not db:
+        return jsonify({'message': 'Database connection error'}), 500
+        
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        cursor.execute('''
+            SELECT w.name, w.address 
+            FROM wallets w
+            JOIN wallets_access wa ON w.name = wa.wallet_name
+            WHERE wa.client_user = %s
+        ''', (current_user,))
+        
+        wallets = cursor.fetchall()
+        return jsonify(wallets), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching wallets: {e}")
+        return jsonify({'message': f'Error fetching wallets: {str(e)}'}), 500
     finally:
         cursor.close()
         db.close() 

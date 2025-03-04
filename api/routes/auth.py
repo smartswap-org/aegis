@@ -8,14 +8,13 @@ from user_agents import parse as ua_parse
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
 @bp.route('/register', methods=['POST'])
-@rate_limit(max_requests=10, window=3600)  # max 10 registrations per hour
+@rate_limit(max_requests=10, window=3600)
 def register():
     data = request.get_json()
     
     if not data or not data.get('user') or not data.get('password'):
         return jsonify({'message': 'Missing required fields'}), 400
         
-    # password validation
     if len(data['password']) < 8:
         return jsonify({'message': 'Password must be at least 8 characters'}), 400
         
@@ -26,12 +25,10 @@ def register():
     cursor = db.cursor(dictionary=True)
     
     try:
-        # check if user exists
         cursor.execute('SELECT user FROM clients WHERE user = %s', (data['user'],))
         if cursor.fetchone():
             return jsonify({'message': 'Username already exists'}), 400
             
-        # create new user
         encrypted_password = encrypt_password(data['password'])
         cursor.execute(
             'INSERT INTO clients (user, discord_user_id, password) VALUES (%s, %s, %s)',
@@ -39,7 +36,6 @@ def register():
         )
         db.commit()
         
-        # generate JWT token
         token = generate_token({
             'user': data['user'],
             'discord_user_id': data.get('discord_user_id')
@@ -59,7 +55,7 @@ def register():
         db.close()
 
 @bp.route('/login', methods=['POST'])
-@rate_limit(max_requests=20, window=60)  # max 20 attempts per minute
+@rate_limit(max_requests=20, window=60)
 def login():
     data = request.get_json()
     
@@ -128,7 +124,6 @@ def login():
         
         db.commit()
             
-        # generate JWT token
         token = generate_token({
             'user': user['user'],
             'discord_user_id': user['discord_user_id']
@@ -150,7 +145,6 @@ def login():
 
 @bp.route('/logout', methods=['POST'])
 def logout():
-    # in a real implementation with token blacklist
     return jsonify({'message': 'Logout successful'}), 200
 
 @bp.route('/user', methods=['GET'])
@@ -161,7 +155,6 @@ def get_user():
         
     token = auth_header.split(' ')[1]
     try:
-        # Verify and decode the token
         payload = verify_token(token)
         if not payload:
             return jsonify({'message': 'Invalid token'}), 401
@@ -173,7 +166,6 @@ def get_user():
         cursor = db.cursor(dictionary=True)
         
         try:
-            # Get user data from database using the subject from token
             cursor.execute('SELECT user, discord_user_id, power FROM clients WHERE user = %s', (payload['sub'],))
             user_data = cursor.fetchone()
             
@@ -191,4 +183,4 @@ def get_user():
             
     except Exception as e:
         logger.error(f"Token verification error: {e}")
-        return jsonify({'message': 'Invalid token'}), 401 
+        return jsonify({'message': 'Invalid token'}), 401

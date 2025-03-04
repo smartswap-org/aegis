@@ -3,10 +3,9 @@ from mysql.connector import connect, Error
 from config import Config
 from loguru import logger
 
-# establish database connection using environment variables
 def get_db():
-    """Get a new database connection."""
     try:
+        # get database configuration from config
         mysql_config = Config.get_mysql_config()
         connection_params = {
             'host': mysql_config['host'],
@@ -18,6 +17,7 @@ def get_db():
             'auth_plugin': 'mysql_native_password'
         }
         
+        # adjust connection pool settings based on environment
         if os.getenv('FLASK_ENV') == 'testing':
             connection_params.update({
                 'pool_size': 1
@@ -30,8 +30,10 @@ def get_db():
                 'pool_reset_session': True
             })
             
+        # establish database connection
         connection = connect(**connection_params)
         
+        # verify database connection is valid
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT DATABASE()")
         db_name = cursor.fetchone()['DATABASE()']

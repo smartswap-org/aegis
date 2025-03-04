@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
 from api.database import get_db
+from api.utils.auth import token_required
 from loguru import logger
 
 bp = Blueprint('positions', __name__, url_prefix='/api/positions')
 
 @bp.route('/', methods=['POST'])
-def create_position():
+@token_required
+def create_position(current_user):
     data = request.get_json()
     
     if not data:
@@ -58,7 +60,8 @@ def create_position():
         db.close()
 
 @bp.route('/', methods=['GET'])
-def get_positions():
+@token_required
+def get_positions(current_user):
     db = get_db()
     if not db:
         return jsonify({'message': 'Database connection error'}), 500
@@ -84,7 +87,8 @@ def get_positions():
         db.close()
 
 @bp.route('/<int:position_id>/sell', methods=['PUT'])
-def update_position(position_id):
+@token_required
+def update_position(current_user, position_id):
     data = request.get_json()
     
     if not data:
