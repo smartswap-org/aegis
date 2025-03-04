@@ -26,16 +26,21 @@ def create_position(current_user):
     cursor = db.cursor(dictionary=True)
     
     try:
+        cursor.execute('SELECT bot_id FROM bots WHERE bot_name = %s', (data['bot_name'],))
+        bot = cursor.fetchone()
+        if not bot:
+            return jsonify({'message': f'Bot {data["bot_name"]} not found'}), 404
+            
         cursor.execute('''
             INSERT INTO cex_market (
                 buy_order_id, buy_price, buy_quantity, buy_fees, 
-                buy_value_usdt, exchange, pair, bot_name, buy_date,
+                buy_value_usdt, exchange, pair, bot_id, buy_date,
                 buy_signals, fund_slot
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s)
         ''', (
             data['buy_order_id'], data['buy_price'], data['buy_quantity'],
             data['buy_fees'], data['buy_value_usdt'], data['exchange'],
-            data['pair'], data['bot_name'], data.get('buy_signals'),
+            data['pair'], bot['bot_id'], data.get('buy_signals'),
             data.get('fund_slot', 0)
         ))
         position_id = cursor.lastrowid
