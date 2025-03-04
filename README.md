@@ -15,7 +15,7 @@ AEGIS is an API that securely manages users, wallets, trading positions, and fun
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/aegis.git
+   git clone https://github.com/smartswap-org/aegis
    cd aegis
    ```
 
