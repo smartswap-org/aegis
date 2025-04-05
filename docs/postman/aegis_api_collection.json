@@ -1,0 +1,655 @@
+{
+  "info": {
+    "name": "Aegis API Collection",
+    "description": "Collection for the Aegis Trading Bot API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": \"username\",\n  \"password\": \"password123\",\n  \"discord_user_id\": \"optional_discord_id\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create a new user account"
+          },
+          "response": [
+            {
+              "name": "Success - User Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"message\": \"User created successfully\",\n  \"token\": \"jwt_token_here\"\n}"
+            },
+            {
+              "name": "Error - Username Exists",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"message\": \"Username already exists\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": \"username\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Login and get JWT token",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "var jsonData = JSON.parse(responseBody);",
+                    "if (jsonData.token) {",
+                    "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          },
+          "response": [
+            {
+              "name": "Success - Login",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"user\": \"username\",\n  \"discord_user_id\": \"discord_id\",\n  \"token\": \"jwt_token_here\",\n  \"power\": 1\n}"
+            },
+            {
+              "name": "Error - Invalid Credentials",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"message\": \"Invalid username or password\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "User Info",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/user",
+            "description": "Get the current user's information",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - User Info",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"user\": \"username\",\n  \"discord_user_id\": \"discord_id\",\n  \"power\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Check Token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/check",
+            "description": "Verify if the current token is valid",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Valid Token",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"authenticated\": true,\n  \"user\": \"username\",\n  \"discord_user_id\": \"discord_id\",\n  \"power\": 1\n}"
+            },
+            {
+              "name": "Error - Invalid Token",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"authenticated\": false\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Wallet Management",
+      "item": [
+        {
+          "name": "Create Wallet",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/wallets",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"wallet_name\",\n  \"address\": \"wallet_address\",\n  \"keys\": {\n    \"private\": \"private_key\",\n    \"public\": \"public_key\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create a new wallet",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Wallet Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"name\": \"wallet_name\",\n  \"address\": \"wallet_address\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/wallets/:wallet_name",
+            "description": "Get wallet details",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Wallet Details",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"name\": \"wallet_name\",\n  \"address\": \"wallet_address\",\n  \"keys\": {\n    \"private\": \"private_key\",\n    \"public\": \"public_key\"\n  }\n}"
+            },
+            {
+              "name": "Error - Access Denied",
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"message\": \"Access denied\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Wallet",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/wallets/:wallet_name",
+            "description": "Delete a wallet",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Wallet Deleted",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Wallet deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Wallets",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/wallets/list",
+            "description": "Get a list of all wallets the authenticated user has access to",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Wallet List",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"name\": \"wallet1\",\n    \"address\": \"address1\"\n  },\n  {\n    \"name\": \"wallet2\",\n    \"address\": \"address2\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Grant Wallet Access",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/wallets/access",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_user\": \"username\",\n  \"wallet_name\": \"wallet_name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Grant wallet access to another user",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Revoke Wallet Access",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/wallets/access/:client_user/:wallet_name",
+            "description": "Revoke wallet access from user",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bots",
+      "item": [
+        {
+          "name": "Create Bot",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/bots",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"bot_name\",\n  \"strategy\": \"trading_strategy\",\n  \"exchange_name\": \"exchange\",\n  \"pairs\": \"BTC/USDT,ETH/USDT\",\n  \"reinvest_gains\": true,\n  \"position_percent_invest\": 10.0,\n  \"invest_capital\": 1000.0,\n  \"adjust_with_profits_if_loss\": true,\n  \"timeframe\": \"1h\",\n  \"simulation\": false,\n  \"status\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create a new trading bot",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Bot Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"name\": \"bot_name\",\n  \"strategy\": \"trading_strategy\",\n  \"exchange_name\": \"exchange\",\n  \"pairs\": \"BTC/USDT,ETH/USDT\",\n  \"reinvest_gains\": true,\n  \"position_percent_invest\": 10.0,\n  \"invest_capital\": 1000.0,\n  \"adjust_with_profits_if_loss\": true,\n  \"timeframe\": \"1h\",\n  \"simulation\": false,\n  \"status\": true,\n  \"current_funds\": 1000.0,\n  \"total_positions\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Bots",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/bots",
+            "description": "Get all bots",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Bot List",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"bots\": [\n    {\n      \"id\": 1,\n      \"name\": \"bot_name\",\n      \"strategy\": \"trading_strategy\",\n      \"exchange_name\": \"exchange\",\n      \"pairs\": \"BTC/USDT,ETH/USDT\",\n      \"reinvest_gains\": true,\n      \"position_percent_invest\": 10.0,\n      \"invest_capital\": 1000.0,\n      \"adjust_with_profits_if_loss\": true,\n      \"timeframe\": \"1h\",\n      \"simulation\": false,\n      \"status\": true,\n      \"current_funds\": 1000.0,\n      \"total_positions\": 5\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Positions",
+      "item": [
+        {
+          "name": "Create Position",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/positions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.50,\n  \"buy_value_USDC\": 500.0,\n  \"exchange\": \"binance\",\n  \"pair\": \"BTC/USDT\",\n  \"bot_name\": \"bot_name\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"fund_slot\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create a new position",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Position Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"position_id\": 1,\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.5,\n  \"buy_value_USDC\": 500.0,\n  \"exchange\": \"binance\",\n  \"pair\": \"BTC/USDT\",\n  \"bot_name\": \"bot_name\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"fund_slot\": 1,\n  \"buy_date\": \"2023-01-01T12:00:00Z\",\n  \"buy_log\": false,\n  \"sell_log\": false\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Positions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/positions",
+            "description": "Get all positions",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Position List",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"positions\": [\n    {\n      \"position_id\": 1,\n      \"buy_order_id\": \"order123\",\n      \"buy_price\": 50000.0,\n      \"buy_quantity\": 0.01,\n      \"buy_fees\": 0.5,\n      \"buy_value_USDC\": 500.0,\n      \"exchange\": \"binance\",\n      \"pair\": \"BTC/USDT\",\n      \"bot_id\": 1,\n      \"buy_signals\": \"RSI,MACD\",\n      \"fund_slot\": 1,\n      \"buy_date\": \"2023-01-01T12:00:00Z\",\n      \"sell_order_id\": null,\n      \"sell_price\": null,\n      \"sell_quantity\": null,\n      \"sell_fees\": null,\n      \"sell_value_USDC\": null,\n      \"sell_date\": null,\n      \"sell_signals\": null,\n      \"ratio\": null,\n      \"position_duration\": null,\n      \"buy_log\": false,\n      \"sell_log\": false\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Position (Sell)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/positions/:position_id",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sell_order_id\": \"sellorder123\",\n  \"sell_price\": 55000.0,\n  \"sell_quantity\": 0.01,\n  \"sell_fees\": 0.5,\n  \"sell_value_USDC\": 550.0,\n  \"sell_signals\": \"RSI,MACD\",\n  \"sell_log\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update a position with sell information",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Position Updated",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Position updated successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Funds",
+      "item": [
+        {
+          "name": "Create Fund",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/funds",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_name\": \"bot_name\",\n  \"funds\": 1000.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create a new fund",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Fund Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"bot_name\": \"bot_name\",\n  \"last_position_id\": 0,\n  \"funds\": 1000.0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Funds",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/funds",
+            "description": "Get all funds",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Fund List",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"funds\": [\n    {\n      \"id\": 1,\n      \"bot_name\": \"bot_name\",\n      \"last_position_id\": 5,\n      \"funds\": 1200.0\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Bot Overview",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/dashboard/overview/:bot_name",
+            "description": "Get overview for a specific bot including balance and profit data",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Bot Overview",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"total_balance\": {\n    \"amount\": 1200.0,\n    \"week_change_percentage\": 5.0,\n    \"month_change_percentage\": 20.0\n  },\n  \"total_profit\": {\n    \"all_time\": 200.0,\n    \"week\": {\n      \"amount\": 50.0,\n      \"percentage\": 5.0\n    },\n    \"month\": {\n      \"amount\": 200.0,\n      \"percentage\": 20.0\n    }\n  },\n  \"win_rate\": {\n    \"all_time\": 75.0,\n    \"week\": 66.7,\n    \"month\": 80.0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Bot Performance",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/dashboard/performance/:bot_name",
+            "description": "Get performance data for graphing for a specific bot",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Bot Performance",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"performance\": [\n    {\n      \"date\": \"2023-01-01\",\n      \"balance\": 1000.0,\n      \"profit\": 0.0,\n      \"trades\": 0\n    },\n    {\n      \"date\": \"2023-01-02\",\n      \"balance\": 1050.0,\n      \"profit\": 50.0,\n      \"trades\": 2\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Trade Details",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/dashboard/trades/:position_id",
+            "description": "Get detailed information about a specific trade",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - Trade Details",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"position_id\": 1,\n  \"pair\": \"BTC/USDT\",\n  \"exchange\": \"binance\",\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.5,\n  \"buy_value_USDC\": 500.0,\n  \"buy_date\": \"2023-01-01T12:00:00Z\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"sell_order_id\": \"sellorder123\",\n  \"sell_price\": 55000.0,\n  \"sell_quantity\": 0.01,\n  \"sell_fees\": 0.5,\n  \"sell_value_USDC\": 550.0,\n  \"sell_date\": \"2023-01-02T12:00:00Z\",\n  \"sell_signals\": \"RSI,MACD\",\n  \"ratio\": 1.1,\n  \"position_duration\": 86400,\n  \"fund_slot\": 1,\n  \"bot_name\": \"bot_name\",\n  \"bot_id\": 1\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+} 
