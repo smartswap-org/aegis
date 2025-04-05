@@ -70,7 +70,7 @@ def test_bot(client, auth_token, test_wallet):
     data = {
         'name': 'testbot',
         'exchange_name': 'Binance',
-        'pairs': '["BTC/USDT"]',
+        'pairs': '["BTC/USDC"]',
         'strategy': 'test_strategy',
         'reinvest_gains': True,
         'position_percent_invest': 50.00,
@@ -138,9 +138,9 @@ def test_create_position(client, auth_token, test_bot):
         'buy_price': 100.0,
         'buy_quantity': 1.0,
         'buy_fees': 0.1,
-        'buy_value_usdt': 100.0,
+        'buy_value_usdc': 100.0,
         'exchange': 'binance',
-        'pair': 'BTC/USDT',
+        'pair': 'BTC/USDC',
         'bot_name': test_bot
     }
     headers = {'Authorization': f'Bearer {auth_token}'}

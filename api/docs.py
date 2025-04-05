@@ -131,7 +131,7 @@ position_model = api.model('Position', {
     'buy_price': fields.Float(required=True, description='Buy price'),
     'buy_quantity': fields.Float(required=True, description='Buy quantity'),
     'buy_fees': fields.Float(required=True, description='Buy fees'),
-    'buy_value_usdt': fields.Float(required=True, description='Value in USDT'),
+    'buy_value_usdc': fields.Float(required=True, description='Value in USDC'),
     'exchange': fields.String(required=True, description='Exchange used'),
     'pair': fields.String(required=True, description='Trading pair'),
     'bot_name': fields.String(required=True, description='Bot name'),
@@ -145,7 +145,7 @@ position_response = api.model('PositionResponse', {
     'buy_price': fields.Float(description='Buy price'),
     'buy_quantity': fields.Float(description='Buy quantity'),
     'buy_fees': fields.Float(description='Buy fees'),
-    'buy_value_usdt': fields.Float(description='Value in USDT'),
+    'buy_value_usdc': fields.Float(description='Value in USDC'),
     'exchange': fields.String(description='Exchange used'),
     'pair': fields.String(description='Trading pair'),
     'bot_name': fields.String(description='Bot name'),
@@ -161,7 +161,7 @@ position_update_model = api.model('PositionUpdate', {
     'sell_price': fields.Float(required=True, description='Sell price'),
     'sell_quantity': fields.Float(required=True, description='Sell quantity'),
     'sell_fees': fields.Float(required=True, description='Sell fees'),
-    'sell_value_usdt': fields.Float(required=True, description='Value in USDT'),
+    'sell_value_usdc': fields.Float(required=True, description='Value in USDC'),
     'sell_signals': fields.String(required=False, description='Sell signals'),
     'sell_log': fields.Boolean(required=False, description='Sell log')
 })
@@ -183,18 +183,18 @@ dashboard_ns = api.namespace('dashboard', description='Dashboard operations')
 
 # Models for dashboard responses
 balance_model = api.model('Balance', {
-    'amount': fields.Float(description='Balance amount in USDT'),
+    'amount': fields.Float(description='Balance amount in USDC'),
     'week_change_percentage': fields.Float(description='Weekly change percentage'),
     'month_change_percentage': fields.Float(description='Monthly change percentage')
 })
 
 profit_period_model = api.model('ProfitPeriod', {
-    'amount': fields.Float(description='Profit amount in USDT'),
+    'amount': fields.Float(description='Profit amount in USDC'),
     'percentage': fields.Float(description='Change percentage for the period')
 })
 
 profit_model = api.model('Profit', {
-    'all_time': fields.Float(description='All-time profit in USDT'),
+    'all_time': fields.Float(description='All-time profit in USDC'),
     'week': fields.Nested(profit_period_model),
     'month': fields.Nested(profit_period_model)
 })
@@ -227,7 +227,7 @@ trade_model = api.model('Trade', {
     'position_id': fields.Integer(description='Position ID'),
     'pair': fields.String(description='Trading pair'),
     'entry_price': fields.Float(description='Entry price'),
-    'profit_loss': fields.Float(description='Profit/Loss in USDT'),
+    'profit_loss': fields.Float(description='Profit/Loss in USDC'),
     'profit_loss_percentage': fields.Float(description='Profit/Loss percentage'),
     'duration_days': fields.Integer(description='Trade duration in days'),
     'buy_date': fields.DateTime(description='Entry date'),
@@ -255,14 +255,14 @@ trade_detail_model = api.model('TradeDetail', {
     'buy_price': fields.Float(description='Buy price'),
     'buy_quantity': fields.Float(description='Buy quantity'),
     'buy_fees': fields.Float(description='Buy fees'),
-    'buy_value_usdt': fields.Float(description='Buy value in USDT'),
+    'buy_value_usdc': fields.Float(description='Buy value in USDC'),
     'buy_date': fields.DateTime(description='Buy date'),
     'buy_signals': fields.String(description='Buy signals'),
     'sell_order_id': fields.Integer(description='Sell order ID'),
     'sell_price': fields.Float(description='Sell price'),
     'sell_quantity': fields.Float(description='Sell quantity'),
     'sell_fees': fields.Float(description='Sell fees'),
-    'sell_value_usdt': fields.Float(description='Sell value in USDT'),
+    'sell_value_usdc': fields.Float(description='Sell value in USDC'),
     'sell_date': fields.DateTime(description='Sell date'),
     'sell_signals': fields.String(description='Sell signals'),
     'ratio': fields.Float(description='Profit/Loss ratio'),
@@ -559,12 +559,12 @@ class PositionList(Resource):
             cursor.execute('''
                 INSERT INTO cex_market (
                     buy_order_id, buy_price, buy_quantity, buy_fees, 
-                    buy_value_usdt, exchange, pair, bot_name, buy_date,
+                    buy_value_usdc, exchange, pair, bot_name, buy_date,
                     buy_signals, fund_slot
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s)
             ''', (
                 data['buy_order_id'], data['buy_price'], data['buy_quantity'],
-                data['buy_fees'], data['buy_value_usdt'], data['exchange'],
+                data['buy_fees'], data['buy_value_usdc'], data['exchange'],
                 data['pair'], data['bot_name'], data.get('buy_signals'),
                 data.get('fund_slot', 0)
             ))
@@ -641,15 +641,15 @@ class PositionSell(Resource):
                     sell_price = %s,
                     sell_quantity = %s,
                     sell_fees = %s,
-                    sell_value_usdt = %s,
+                    sell_value_usdc = %s,
                     sell_date = NOW(),
                     sell_signals = %s,
-                    ratio = (sell_value_usdt - buy_value_usdt) / buy_value_usdt,
+                    ratio = (sell_value_usdc - buy_value_usdc) / buy_value_usdc,
                     position_duration = TIMESTAMPDIFF(SECOND, buy_date, NOW())
                 WHERE position_id = %s
             ''', (
                 data['sell_order_id'], data['sell_price'], data['sell_quantity'],
-                data['sell_fees'], data['sell_value_usdt'], data.get('sell_signals'),
+                data['sell_fees'], data['sell_value_usdc'], data.get('sell_signals'),
                 position_id
             ))
             

@@ -335,7 +335,7 @@
             "url": "{{baseUrl}}/api/bots",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"bot_name\",\n  \"strategy\": \"trading_strategy\",\n  \"exchange_name\": \"exchange\",\n  \"pairs\": \"BTC/USDT,ETH/USDT\",\n  \"reinvest_gains\": true,\n  \"position_percent_invest\": 10.0,\n  \"invest_capital\": 1000.0,\n  \"adjust_with_profits_if_loss\": true,\n  \"timeframe\": \"1h\",\n  \"simulation\": false,\n  \"status\": true\n}",
+              "raw": "{\n  \"name\": \"bot_name\",\n  \"strategy\": \"trading_strategy\",\n  \"exchange_name\": \"exchange\",\n  \"pairs\": \"BTC/USDC,ETH/USDC\",\n  \"reinvest_gains\": true,\n  \"position_percent_invest\": 10.0,\n  \"invest_capital\": 1000.0,\n  \"adjust_with_profits_if_loss\": true,\n  \"timeframe\": \"1h\",\n  \"simulation\": false,\n  \"status\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -359,7 +359,7 @@
               "name": "Success - Bot Created",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"id\": 1,\n  \"name\": \"bot_name\",\n  \"strategy\": \"trading_strategy\",\n  \"exchange_name\": \"exchange\",\n  \"pairs\": \"BTC/USDT,ETH/USDT\",\n  \"reinvest_gains\": true,\n  \"position_percent_invest\": 10.0,\n  \"invest_capital\": 1000.0,\n  \"adjust_with_profits_if_loss\": true,\n  \"timeframe\": \"1h\",\n  \"simulation\": false,\n  \"status\": true,\n  \"current_funds\": 1000.0,\n  \"total_positions\": 0\n}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"bot_name\",\n  \"strategy\": \"trading_strategy\",\n  \"exchange_name\": \"exchange\",\n  \"pairs\": \"BTC/USDC,ETH/USDC\",\n  \"reinvest_gains\": true,\n  \"position_percent_invest\": 10.0,\n  \"invest_capital\": 1000.0,\n  \"adjust_with_profits_if_loss\": true,\n  \"timeframe\": \"1h\",\n  \"simulation\": false,\n  \"status\": true,\n  \"current_funds\": 1000.0,\n  \"total_positions\": 0\n}"
             }
           ]
         },
@@ -385,7 +385,7 @@
               "name": "Success - Bot List",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"bots\": [\n    {\n      \"id\": 1,\n      \"name\": \"bot_name\",\n      \"strategy\": \"trading_strategy\",\n      \"exchange_name\": \"exchange\",\n      \"pairs\": \"BTC/USDT,ETH/USDT\",\n      \"reinvest_gains\": true,\n      \"position_percent_invest\": 10.0,\n      \"invest_capital\": 1000.0,\n      \"adjust_with_profits_if_loss\": true,\n      \"timeframe\": \"1h\",\n      \"simulation\": false,\n      \"status\": true,\n      \"current_funds\": 1000.0,\n      \"total_positions\": 5\n    }\n  ]\n}"
+              "body": "{\n  \"bots\": [\n    {\n      \"id\": 1,\n      \"name\": \"bot_name\",\n      \"strategy\": \"trading_strategy\",\n      \"exchange_name\": \"exchange\",\n      \"pairs\": \"BTC/USDC,ETH/USDC\",\n      \"reinvest_gains\": true,\n      \"position_percent_invest\": 10.0,\n      \"invest_capital\": 1000.0,\n      \"adjust_with_profits_if_loss\": true,\n      \"timeframe\": \"1h\",\n      \"simulation\": false,\n      \"status\": true,\n      \"current_funds\": 1000.0,\n      \"total_positions\": 5\n    }\n  ]\n}"
             }
           ]
         }
@@ -401,7 +401,7 @@
             "url": "{{baseUrl}}/api/positions",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.50,\n  \"buy_value_USDC\": 500.0,\n  \"exchange\": \"binance\",\n  \"pair\": \"BTC/USDT\",\n  \"bot_name\": \"bot_name\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"fund_slot\": 1\n}",
+              "raw": "{\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.50,\n  \"buy_value_USDC\": 500.0,\n  \"exchange\": \"binance\",\n  \"pair\": \"BTC/USDC\",\n  \"bot_name\": \"bot_name\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"fund_slot\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -425,7 +425,7 @@
               "name": "Success - Position Created",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"position_id\": 1,\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.5,\n  \"buy_value_USDC\": 500.0,\n  \"exchange\": \"binance\",\n  \"pair\": \"BTC/USDT\",\n  \"bot_name\": \"bot_name\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"fund_slot\": 1,\n  \"buy_date\": \"2023-01-01T12:00:00Z\",\n  \"buy_log\": false,\n  \"sell_log\": false\n}"
+              "body": "{\n  \"position_id\": 1,\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.5,\n  \"buy_value_USDC\": 500.0,\n  \"exchange\": \"binance\",\n  \"pair\": \"BTC/USDC\",\n  \"bot_name\": \"bot_name\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"fund_slot\": 1,\n  \"buy_date\": \"2023-01-01T12:00:00Z\",\n  \"buy_log\": false,\n  \"sell_log\": false\n}"
             }
           ]
         },
@@ -451,7 +451,7 @@
               "name": "Success - Position List",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"positions\": [\n    {\n      \"position_id\": 1,\n      \"buy_order_id\": \"order123\",\n      \"buy_price\": 50000.0,\n      \"buy_quantity\": 0.01,\n      \"buy_fees\": 0.5,\n      \"buy_value_USDC\": 500.0,\n      \"exchange\": \"binance\",\n      \"pair\": \"BTC/USDT\",\n      \"bot_id\": 1,\n      \"buy_signals\": \"RSI,MACD\",\n      \"fund_slot\": 1,\n      \"buy_date\": \"2023-01-01T12:00:00Z\",\n      \"sell_order_id\": null,\n      \"sell_price\": null,\n      \"sell_quantity\": null,\n      \"sell_fees\": null,\n      \"sell_value_USDC\": null,\n      \"sell_date\": null,\n      \"sell_signals\": null,\n      \"ratio\": null,\n      \"position_duration\": null,\n      \"buy_log\": false,\n      \"sell_log\": false\n    }\n  ]\n}"
+              "body": "{\n  \"positions\": [\n    {\n      \"position_id\": 1,\n      \"buy_order_id\": \"order123\",\n      \"buy_price\": 50000.0,\n      \"buy_quantity\": 0.01,\n      \"buy_fees\": 0.5,\n      \"buy_value_USDC\": 500.0,\n      \"exchange\": \"binance\",\n      \"pair\": \"BTC/USDC\",\n      \"bot_id\": 1,\n      \"buy_signals\": \"RSI,MACD\",\n      \"fund_slot\": 1,\n      \"buy_date\": \"2023-01-01T12:00:00Z\",\n      \"sell_order_id\": null,\n      \"sell_price\": null,\n      \"sell_quantity\": null,\n      \"sell_fees\": null,\n      \"sell_value_USDC\": null,\n      \"sell_date\": null,\n      \"sell_signals\": null,\n      \"ratio\": null,\n      \"position_duration\": null,\n      \"buy_log\": false,\n      \"sell_log\": false\n    }\n  ]\n}"
             }
           ]
         },
@@ -635,7 +635,7 @@
               "name": "Success - Trade Details",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"position_id\": 1,\n  \"pair\": \"BTC/USDT\",\n  \"exchange\": \"binance\",\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.5,\n  \"buy_value_USDC\": 500.0,\n  \"buy_date\": \"2023-01-01T12:00:00Z\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"sell_order_id\": \"sellorder123\",\n  \"sell_price\": 55000.0,\n  \"sell_quantity\": 0.01,\n  \"sell_fees\": 0.5,\n  \"sell_value_USDC\": 550.0,\n  \"sell_date\": \"2023-01-02T12:00:00Z\",\n  \"sell_signals\": \"RSI,MACD\",\n  \"ratio\": 1.1,\n  \"position_duration\": 86400,\n  \"fund_slot\": 1,\n  \"bot_name\": \"bot_name\",\n  \"bot_id\": 1\n}"
+              "body": "{\n  \"position_id\": 1,\n  \"pair\": \"BTC/USDC\",\n  \"exchange\": \"binance\",\n  \"buy_order_id\": \"order123\",\n  \"buy_price\": 50000.0,\n  \"buy_quantity\": 0.01,\n  \"buy_fees\": 0.5,\n  \"buy_value_USDC\": 500.0,\n  \"buy_date\": \"2023-01-01T12:00:00Z\",\n  \"buy_signals\": \"RSI,MACD\",\n  \"sell_order_id\": \"sellorder123\",\n  \"sell_price\": 55000.0,\n  \"sell_quantity\": 0.01,\n  \"sell_fees\": 0.5,\n  \"sell_value_USDC\": 550.0,\n  \"sell_date\": \"2023-01-02T12:00:00Z\",\n  \"sell_signals\": \"RSI,MACD\",\n  \"ratio\": 1.1,\n  \"position_duration\": 86400,\n  \"fund_slot\": 1,\n  \"bot_name\": \"bot_name\",\n  \"bot_id\": 1\n}"
             }
           ]
         }

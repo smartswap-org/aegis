@@ -30,12 +30,12 @@ def get_overview(current_user, bot_name):
         cursor.execute('''
             SELECT 
                 cm.position_id,
-                cm.buy_value_usdt,
-                cm.sell_value_usdt,
+                cm.buy_value_usdc,
+                cm.sell_value_usdc,
                 cm.buy_fees,
                 cm.sell_fees,
                 cm.sell_date,
-                (cm.sell_value_usdt - cm.buy_value_usdt - cm.buy_fees - cm.sell_fees) as profit
+                (cm.sell_value_usdc - cm.buy_value_usdc - cm.buy_fees - cm.sell_fees) as profit
             FROM cex_market cm
             JOIN bots b ON cm.bot_id = b.bot_id
             WHERE cm.sell_date IS NOT NULL
@@ -172,7 +172,7 @@ def get_performance(current_user, bot_name):
             SELECT 
                 {group_by} as date_group,
                 DATE_FORMAT(MIN(cm.sell_date), %s) as period,
-                SUM(cm.sell_value_usdt - cm.buy_value_usdt - cm.buy_fees - cm.sell_fees) as profit,
+                SUM(cm.sell_value_usdc - cm.buy_value_usdc - cm.buy_fees - cm.sell_fees) as profit,
                 COUNT(*) as trades
             FROM cex_market cm
             JOIN bots b ON cm.bot_id = b.bot_id
@@ -243,11 +243,11 @@ def get_recent_trades(current_user, bot_name):
                 cm.pair,
                 cm.buy_price as entry_price,
                 CASE 
-                    WHEN cm.sell_date IS NOT NULL THEN cm.sell_value_usdt - cm.buy_value_usdt - COALESCE(cm.buy_fees, 0) - COALESCE(cm.sell_fees, 0)
+                    WHEN cm.sell_date IS NOT NULL THEN cm.sell_value_usdc - cm.buy_value_usdc - COALESCE(cm.buy_fees, 0) - COALESCE(cm.sell_fees, 0)
                     ELSE NULL
                 END as profit_loss,
                 CASE 
-                    WHEN cm.sell_date IS NOT NULL THEN ((cm.sell_value_usdt - cm.buy_value_usdt - COALESCE(cm.buy_fees, 0) - COALESCE(cm.sell_fees, 0)) / cm.buy_value_usdt * 100)
+                    WHEN cm.sell_date IS NOT NULL THEN ((cm.sell_value_usdc - cm.buy_value_usdc - COALESCE(cm.buy_fees, 0) - COALESCE(cm.sell_fees, 0)) / cm.buy_value_usdc * 100)
                     ELSE NULL
                 END as profit_loss_percentage,
                 CASE 
@@ -257,8 +257,8 @@ def get_recent_trades(current_user, bot_name):
                 cm.buy_date,
                 cm.sell_date,
                 cm.exchange,
-                cm.buy_value_usdt,
-                cm.sell_value_usdt,
+                cm.buy_value_usdc,
+                cm.sell_value_usdc,
                 cm.buy_fees,
                 cm.sell_fees,
                 CASE 
@@ -310,14 +310,14 @@ def get_trade_details(current_user, position_id):
                 cm.buy_price,
                 cm.buy_quantity,
                 cm.buy_fees,
-                cm.buy_value_usdt,
+                cm.buy_value_usdc,
                 cm.buy_date,
                 cm.buy_signals,
                 cm.sell_order_id,
                 cm.sell_price,
                 cm.sell_quantity,
                 cm.sell_fees,
-                cm.sell_value_usdt,
+                cm.sell_value_usdc,
                 cm.sell_date,
                 cm.sell_signals,
                 cm.ratio,

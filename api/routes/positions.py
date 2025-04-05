@@ -14,7 +14,7 @@ def create_position(current_user):
         return jsonify({'message': 'No input data provided'}), 400
         
     required_fields = ['buy_order_id', 'buy_price', 'buy_quantity', 'buy_fees',
-                      'buy_value_usdt', 'exchange', 'pair', 'bot_name']
+                      'buy_value_usdc', 'exchange', 'pair', 'bot_name']
     for field in required_fields:
         if field not in data:
             return jsonify({'message': f'Missing required field: {field}'}), 400
@@ -34,12 +34,12 @@ def create_position(current_user):
         cursor.execute('''
             INSERT INTO cex_market (
                 buy_order_id, buy_price, buy_quantity, buy_fees, 
-                buy_value_usdt, exchange, pair, bot_id, buy_date,
+                buy_value_usdc, exchange, pair, bot_id, buy_date,
                 buy_signals, fund_slot
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s)
         ''', (
             data['buy_order_id'], data['buy_price'], data['buy_quantity'],
-            data['buy_fees'], data['buy_value_usdt'], data['exchange'],
+            data['buy_fees'], data['buy_value_usdc'], data['exchange'],
             data['pair'], bot['bot_id'], data.get('buy_signals'),
             data.get('fund_slot', 0)
         ))
@@ -100,7 +100,7 @@ def update_position(current_user, position_id):
         return jsonify({'message': 'No input data provided'}), 400
         
     required_fields = ['sell_order_id', 'sell_price', 'sell_quantity',
-                      'sell_fees', 'sell_value_usdt']
+                      'sell_fees', 'sell_value_usdc']
     for field in required_fields:
         if field not in data:
             return jsonify({'message': f'Missing required field: {field}'}), 400
@@ -118,15 +118,15 @@ def update_position(current_user, position_id):
                 sell_price = %s,
                 sell_quantity = %s,
                 sell_fees = %s,
-                sell_value_usdt = %s,
+                sell_value_usdc = %s,
                 sell_date = NOW(),
                 sell_signals = %s,
-                ratio = (sell_value_usdt - buy_value_usdt) / buy_value_usdt,
+                ratio = (sell_value_usdc - buy_value_usdc) / buy_value_usdc,
                 position_duration = TIMESTAMPDIFF(SECOND, buy_date, NOW())
             WHERE position_id = %s
         ''', (
             data['sell_order_id'], data['sell_price'], data['sell_quantity'],
-            data['sell_fees'], data['sell_value_usdt'], data.get('sell_signals'),
+            data['sell_fees'], data['sell_value_usdc'], data.get('sell_signals'),
             position_id
         ))
         
