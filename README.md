@@ -2,7 +2,7 @@
 
 AEGIS is an API that securely manages users, wallets, trading positions, and fund integrations for seamless interfaces.
 
-<img src="https://github.com/smartswap-org/aegis/blob/d433ff2f9eae6c050a974553dfec1c3a59f814df/assets/logo.png" alt="AEGIS Logo" style="width:300px">
+<img src="assets/logo.png" alt="AEGIS Logo" style="width:300px">
 
 ## Features
 
