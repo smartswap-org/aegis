@@ -31,15 +31,7 @@ AEGIS is an API that securely manages users, wallets, trading positions, and fun
    ```
 
 4. Configure environment:
-   Create a `.env` file in the root directory:
-   ```
-   FLASK_SECRET_KEY=your-secret-key
-   MYSQL_HOST=localhost
-   MYSQL_USER=root
-   MYSQL_PASSWORD=
-   MYSQL_DATABASE=smartswap
-   MYSQL_PORT=3306
-   ```
+   See ``.env.example`` to make ``.env``
 
 5. Start the API:
    ```bash
