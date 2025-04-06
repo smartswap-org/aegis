@@ -26,11 +26,6 @@ class Config:
         Config.load_config()
         return Config._config['mysql']
 
-    @staticmethod
-    def get_flask_config():
-        Config.load_config()
-        return Config._config['flask']
-
     # default configuration values
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'smartswap')
     
@@ -44,6 +39,7 @@ class Config:
     # flask application settings
     FLASK_SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
     FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true' and os.getenv('FLASK_ENV', 'production') != 'production'
+    FLASK_PORT = int(os.getenv('FLASK_PORT', 5001))
 
     @staticmethod
     def get_mysql_config():
@@ -59,5 +55,6 @@ class Config:
     def get_flask_config():
         return {
             'secret_key': Config.FLASK_SECRET_KEY,
-            'debug': Config.FLASK_DEBUG
+            'debug': Config.FLASK_DEBUG,
+            'port': Config.FLASK_PORT
         }
