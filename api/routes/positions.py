@@ -67,6 +67,7 @@ def create_position(current_user):
 @bp.route('/', methods=['GET'])
 @token_required
 def get_positions(current_user):
+    bot_name = request.args.get('bot_name')
     db = get_db()
     if not db:
         return jsonify({'message': 'Database connection error'}), 500
@@ -74,12 +75,23 @@ def get_positions(current_user):
     cursor = db.cursor(dictionary=True)
     
     try:
-        cursor.execute('''
+        query = '''
             SELECT cm.*, a.buy_log, a.sell_log
             FROM cex_market cm
             LEFT JOIN app a ON cm.position_id = a.position_id
-            ORDER BY cm.buy_date DESC
-        ''')
+        '''
+        params = []
+        
+        if bot_name:
+            query += '''
+                JOIN bots b ON cm.bot_id = b.bot_id
+                WHERE b.bot_name = %s
+            '''
+            params.append(bot_name)
+            
+        query += ' ORDER BY cm.buy_date DESC'
+        
+        cursor.execute(query, params)
         positions = cursor.fetchall()
         
         return jsonify({'positions': positions}), 200
