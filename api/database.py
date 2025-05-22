@@ -1,18 +1,19 @@
 import os
 from mysql.connector import connect, Error
-from config import Config
+from dotenv import load_dotenv
 from loguru import logger
 
+load_dotenv()
+
+# establish database connection using environment variables
 def get_db():
     try:
-        # get database configuration from config
-        mysql_config = Config.get_mysql_config()
         connection_params = {
-            'host': mysql_config['host'],
-            'user': mysql_config['user'],
-            'password': mysql_config['password'],
-            'database': mysql_config['database'],
-            'port': mysql_config['port'],
+            'host': os.getenv('MYSQL_HOST', 'localhost'),
+            'user': os.getenv('MYSQL_USER', 'root'),
+            'password': os.getenv('MYSQL_PASSWORD', ''),
+            'database': os.getenv('MYSQL_DATABASE', 'aegis'),
+            'port': int(os.getenv('MYSQL_PORT', 3306)),
             'ssl_disabled': True,
             'auth_plugin': 'mysql_native_password'
         }

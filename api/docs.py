@@ -4,10 +4,12 @@ from api.database import get_db
 from loguru import logger
 import jwt
 import os
-from config import Config
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Secret key for JWT
-JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key')
+JWT_SECRET = os.getenv('FLASK_SECRET_KEY', 'smartswap')
 
 # api documentation blueprint
 bp = Blueprint('docs', __name__)
@@ -356,7 +358,7 @@ class UserInfo(Resource):
 
             try:
                 # Décoder le token JWT
-                payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
+                payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
                 username = payload.get('user')
                 if not username:
                     return {'error': 'Invalid token'}, 401
@@ -407,7 +409,7 @@ class AuthCheck(Resource):
 
             try:
                 # Décoder le token JWT
-                payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
+                payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
                 username = payload.get('user')
                 if not username:
                     return {'authenticated': False}, 401
@@ -830,7 +832,7 @@ class BotList(Resource):
             return {'error': 'No token provided'}, 401
 
         try:
-            payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
+            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
             username = payload.get('sub')
             if not username:
                 return {'error': 'Invalid token'}, 401
@@ -911,7 +913,7 @@ class BotList(Resource):
             return {'error': 'No token provided'}, 401
 
         try:
-            payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
+            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
             username = payload.get('sub')
             if not username:
                 return {'error': 'Invalid token'}, 401
@@ -979,7 +981,7 @@ class Bot(Resource):
             return {'error': 'No token provided'}, 401
 
         try:
-            payload = jwt.decode(token, Config.get_flask_config()['secret_key'], algorithms=['HS256'])
+            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
             username = payload.get('sub')
             if not username:
                 return {'error': 'Invalid token'}, 401

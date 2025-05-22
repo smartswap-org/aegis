@@ -1,10 +1,13 @@
 from functools import wraps
 from flask import request, jsonify
 import jwt
+import os
 from datetime import datetime, timedelta
-from config import Config
+from dotenv import load_dotenv
 import time
 from loguru import logger
+
+load_dotenv()
 
 def generate_token(user_data):
     """Generate a JWT token for the given user data"""
@@ -19,7 +22,7 @@ def generate_token(user_data):
         }
         return jwt.encode(
             payload,
-            Config.get_flask_config()['secret_key'],
+            os.getenv('FLASK_SECRET_KEY', 'smartswap'),
             algorithm='HS256'
         )
     except Exception as e:
@@ -32,7 +35,7 @@ def verify_token(token):
         # decode and validate jwt token
         payload = jwt.decode(
             token, 
-            Config.get_flask_config()['secret_key'],
+            os.getenv('FLASK_SECRET_KEY', 'smartswap'),
             algorithms=['HS256']
         )
         return payload
@@ -67,7 +70,7 @@ def token_required(f):
             # validate token and extract user
             data = jwt.decode(
                 token,
-                Config.get_flask_config()['secret_key'],
+                os.getenv('FLASK_SECRET_KEY', 'smartswap'),
                 algorithms=['HS256']
             )
             current_user = data['sub']
