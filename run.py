@@ -1,6 +1,6 @@
 import os
 from flask import Flask, redirect, send_from_directory
-from api.routes import auth, positions, funds, wallets, dashboard
+from api.routes import auth, positions, funds, wallets, dashboard, health
 from api.docs import bp as docs_bp
 from dotenv import load_dotenv
 
@@ -35,6 +35,7 @@ app.register_blueprint(positions.bp)
 app.register_blueprint(funds.bp)
 app.register_blueprint(wallets.bp)
 app.register_blueprint(dashboard.bp)
+app.register_blueprint(health.bp)
 app.register_blueprint(docs_bp)
 
 # serve static assets
