@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, request, jsonify
 from api.database import get_db
 from api.utils.crypt_password import encrypt_password, check_password
@@ -10,6 +11,9 @@ bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 @bp.route('/register', methods=['POST'])
 @rate_limit(max_requests=10, window=3600)
 def register():
+    if os.getenv('DISABLE_REGISTERS', 'False').lower() == 'true':
+        return jsonify({'message': 'Registration is currently disabled'}), 403
+        
     data = request.get_json()
     
     if not data or not data.get('user') or not data.get('password'):
