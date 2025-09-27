@@ -9,17 +9,17 @@ load_dotenv()
 def get_db():
     try:
         connection_params = {
-            'host': os.getenv('MYSQL_HOST', 'localhost'),
-            'user': os.getenv('MYSQL_USER', 'root'),
-            'password': os.getenv('MYSQL_PASSWORD', ''),
-            'database': os.getenv('MYSQL_DATABASE', 'aegis'),
-            'port': int(os.getenv('MYSQL_PORT', 3306)),
+            'host': os.getenv('AEGIS_MYSQL_HOST', 'localhost'),
+            'user': os.getenv('AEGIS_MYSQL_USER', 'root'),
+            'password': os.getenv('AEGIS_MYSQL_PASSWORD', ''),
+            'database': os.getenv('AEGIS_MYSQL_DATABASE', 'aegis'),
+            'port': int(os.getenv('AEGIS_MYSQL_PORT', 3306)),
             'ssl_disabled': True,
             'auth_plugin': 'mysql_native_password'
         }
         
         # adjust connection pool settings based on environment
-        if os.getenv('FLASK_ENV') == 'testing':
+        if os.getenv('AEGIS_FLASK_ENV') == 'testing':
             connection_params.update({
                 'pool_size': 1
             })

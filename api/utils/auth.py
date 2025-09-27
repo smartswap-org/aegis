@@ -22,7 +22,7 @@ def generate_token(user_data):
         }
         return jwt.encode(
             payload,
-            os.getenv('FLASK_SECRET_KEY', 'smartswap'),
+            os.getenv('AEGIS_SECRET_KEY', 'smartswap'),
             algorithm='HS256'
         )
     except Exception as e:
@@ -35,7 +35,7 @@ def verify_token(token):
         # decode and validate jwt token
         payload = jwt.decode(
             token, 
-            os.getenv('FLASK_SECRET_KEY', 'smartswap'),
+            os.getenv('AEGIS_SECRET_KEY', 'smartswap'),
             algorithms=['HS256']
         )
         return payload
@@ -70,7 +70,7 @@ def token_required(f):
             # validate token and extract user
             data = jwt.decode(
                 token,
-                os.getenv('FLASK_SECRET_KEY', 'smartswap'),
+                os.getenv('AEGIS_SECRET_KEY', 'smartswap'),
                 algorithms=['HS256']
             )
             current_user = data['sub']
