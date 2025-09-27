@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Secret key for JWT
-JWT_SECRET = os.getenv('AEGIS_SECRET_KEY', 'smartswap')
+JWT_SECRET = os.getenv('AEGIS_SECRET_KEY')
 
 # api documentation blueprint
 bp = Blueprint('docs', __name__)

@@ -11,7 +11,7 @@ bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 @bp.route('/register', methods=['POST'])
 @rate_limit(max_requests=10, window=3600)
 def register():
-    if os.getenv('AEGIS_DISABLE_REGISTERS', 'False').lower() == 'true':
+    if os.getenv('AEGIS_DISABLE_REGISTERS').lower() == 'true':
         return jsonify({'message': 'Registration is currently disabled'}), 403
         
     data = request.get_json()

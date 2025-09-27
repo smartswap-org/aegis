@@ -10,13 +10,13 @@ load_dotenv()
 app = Flask(__name__, static_folder='assets')
 
 # initialize flask configuration directly from environment variables
-app.config['SECRET_KEY'] = os.getenv('AEGIS_SECRET_KEY', 'smartswap')
-app.config['DEBUG'] = os.getenv('AEGIS_DEBUG', 'False').lower() == 'true'
-app.config['MYSQL_PORT'] = int(os.getenv('AEGIS_MYSQL_PORT', 3306))
+app.config['SECRET_KEY'] = os.getenv('AEGIS_SECRET_KEY')
+app.config['DEBUG'] = os.getenv('AEGIS_DEBUG').lower() == 'true'
+app.config['MYSQL_PORT'] = int(os.getenv('AEGIS_MYSQL_PORT'))
 
 # setup cors with security settings for cross-origin requests
 from flask_cors import CORS
-cors_origins = os.getenv('AEGIS_CORS_ORIGINS', 'http://localhost:5001,https://aegis.smartswap.com').split(',')
+cors_origins = os.getenv('AEGIS_CORS_ORIGINS').split(',')
 CORS(app, 
      resources={r"/api/*": {
          "origins": cors_origins,
@@ -49,4 +49,4 @@ def index():
     return redirect('/api/', code=302)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('AEGIS_PORT', 5001))) 
+    app.run(host='0.0.0.0', port=int(os.getenv('AEGIS_PORT'))) 

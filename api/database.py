@@ -9,11 +9,11 @@ load_dotenv()
 def get_db():
     try:
         connection_params = {
-            'host': os.getenv('AEGIS_MYSQL_HOST', 'localhost'),
-            'user': os.getenv('AEGIS_MYSQL_USER', 'root'),
-            'password': os.getenv('AEGIS_MYSQL_PASSWORD', ''),
-            'database': os.getenv('AEGIS_MYSQL_DATABASE', 'aegis'),
-            'port': int(os.getenv('AEGIS_MYSQL_PORT', 3306)),
+            'host': os.getenv('AEGIS_MYSQL_HOST'),
+            'user': os.getenv('AEGIS_MYSQL_USER'),
+            'password': os.getenv('AEGIS_MYSQL_PASSWORD'),
+            'database': os.getenv('AEGIS_MYSQL_DATABASE'),
+            'port': int(os.getenv('AEGIS_MYSQL_PORT')),
             'ssl_disabled': True,
             'auth_plugin': 'mysql_native_password'
         }
